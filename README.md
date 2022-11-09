@@ -4,8 +4,9 @@ Proof of Concept for Tableau connectivity to Web Services via Table Extensions.
 
 # API Calls
 
-## Geo location
 </br>
+
+## Geo location
 
 ### Requests
 ```python
@@ -53,9 +54,9 @@ http://api.openweathermap.org/geo/1.0/direct?q=austin,tx,840&appid=API_KEY
   "state": "Texas"
 }
 ```
+</br>
 
 ## Current Weather
-</br>
 
 ### Requests
 ```python
@@ -110,9 +111,9 @@ https://api.openweathermap.org/data/2.5/weather?lat=30.2711286&lon=-97.7436995&a
   "cod": 200
 }
 ```
+</br>
 
 ## 5 Day Forecast
-</br>
 
 ### Requests
 ```python
