@@ -1,0 +1,10 @@
+name: table-extensions
+channels:
+  - defaults
+dependencies:
+  - python=3.9.12
+  - requests=2.28.1
+  - pandas=1.4.4
+  - pip=21.2.4
+  - pip:
+    - python-dotenv==0.19.2
