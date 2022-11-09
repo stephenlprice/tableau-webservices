@@ -9,6 +9,7 @@ env_dict = dict(os.environ)
 
 api_key = env_dict["API_KEY"]
 
-df = data.forecast(api_key)
+current_weather = data.current(api_key)
 
-print(df)
+print(type(current_weather))
+print(current_weather)
