@@ -1,5 +1,3 @@
-import pandas as pd
-import json
 from libs import rest, transform
 
 # creates a data frame from forecast data
