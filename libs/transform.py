@@ -1,6 +1,6 @@
 import pandas as pd
-import json
 
+# creates a dataframe from the JSON payload with current weather
 def current(payload):
   keys = payload.keys()
 
