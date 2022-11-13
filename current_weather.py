@@ -38,6 +38,7 @@ Table Extension script starts here
 # imports used by the Tabpy Function
 import requests
 import pandas as pd
+from requests_futures.sessions import FuturesSession
 
 def current_weather(cities):
   """
@@ -49,16 +50,31 @@ def current_weather(cities):
   def rest_current(api_key, cities):
     # a list of current weather data per city
     city_data = {}
+
     # iterate through the cities dict
+    # for city in cities:
+    #   # assign coordinate
+    #   name = city["city"]
+    #   lon = city["lon"]
+    #   lat = city["lat"]
+    #   url = f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=imperial'
+    #   response = requests.get(url)
+    #   payload = response.json()
+    #   city_data[name] = payload
+
+    session = FuturesSession()
     for city in cities:
-      # assign coordinate
       name = city["city"]
       lon = city["lon"]
       lat = city["lat"]
-      url = f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=imperial'
-      response = requests.get(url)
-      payload = response.json()
+      parameters = f'lat={lat}&lon={lon}&appid={api_key}&units=imperial'
+      url = f'https://api.openweathermap.org/data/2.5/weather?{parameters}'
+
+      future = session.get(url)
+      result = future.result()
+      payload = result.json()
       city_data[name] = payload
+
     return city_data
 
   # creates a dataframe from the JSON payload with current weather
