@@ -1,14 +1,45 @@
+"""
+-------------------------------------------------------------------------------------
+OPENWEATHER API + TABLEAU
+
+Request data from the OpenWeather API via Table Extensions
+
+Table Extension scripts are essentially functions. In order to
+support local development, the final script is wrapped by certain
+imports and functions that can output results to your shell.
+
+To deploy this code via a Table Extension, only copy the code marked
+for usage in Tabpy and exclude any of the code used for local development.
+
+To secure the necessary API key, use a .env file (see README.md) during local
+development. This avoids pushing your key to public repositories such as Github.
+-------------------------------------------------------------------------------------
+"""
+
+# imports used for local development
+import os
+from dotenv import load_dotenv
+
+# load environment files from .env
+load_dotenv(".env")
+# calling environ is expensive, this saves environment variables to a dictionary
+env_dict = dict(os.environ)
+
+env_api_key = env_dict["API_KEY"]
+
+"""
+-------------------------------------------------------------------------------------
+Table Extension script starts here
+-------------------------------------------------------------------------------------
+"""
+# imports used by the Tabpy Function
+import requests
+import pandas as pd
+
+# this is where the Tabpy Function starts
 def current_weather(cities):
-  import requests
-  import pandas as pd
-
-  api_key = "api key"
-
-  # creates a data frame from current weather data
-  # def current(api_key, cities):
-  #   payload = rest_current(api_key, cities)
-  #   data = transform_current(payload)
-  #   return data
+  # change this to a hardcoded API key or set an environment variable in your Tabpy environment
+  api_key = env_api_key
 
   # gets current weather data for the specified geolocation
   def rest_current(api_key, cities):
@@ -28,16 +59,18 @@ def current_weather(cities):
   # creates a dataframe from the JSON payload with current weather
   def transform_current(city_data):
     weather_data = pd.DataFrame()
+    index = 0
     for city in city_data:
+      index = index + 1
       # coordinates
       coord = city_data[city]["coord"]
-      coord["ID"] = 1
+      coord["ID"] = index
       coord = pd.DataFrame.from_dict([coord])
 
       # weather results
       weather = city_data[city]["weather"][0]
       del weather["id"]
-      weather["ID"] = 1
+      weather["ID"] = index
       weather = pd.DataFrame.from_dict([weather])
 
       # main weather data
@@ -46,38 +79,38 @@ def current_weather(cities):
         del main["sea_level"]
       if "grnd_level" in main:
         del main["grnd_level"]
-      main["ID"] = 1
+      main["ID"] = index
       main = pd.DataFrame.from_dict([main])
 
       # visibility 
       visibility = {}
       visibility["visibility"] = city_data[city]["visibility"]
-      visibility["ID"] = 1
+      visibility["ID"] = index
       visibility = pd.DataFrame.from_dict([visibility])
 
       # wind
       wind = {}
       wind["wind speed"] = city_data[city]["wind"]["speed"]
       wind["wind deg"] = city_data[city]["wind"]["deg"]
-      wind["ID"] = 1
+      wind["ID"] = index
       wind = pd.DataFrame.from_dict([wind])
 
       # clouds
       clouds = {}
       clouds["clouds"] = city_data[city]["clouds"]["all"]
-      clouds["ID"] = 1
+      clouds["ID"] = index
       clouds = pd.DataFrame.from_dict([clouds])
 
       # country
       country = {}
       country["country"] = city_data[city]["sys"]["country"]
-      country["ID"] = 1
+      country["ID"] = index
       country = pd.DataFrame.from_dict([country])
 
       # name (city)
       name = {}
       name["name"] = city_data[city]["name"]
-      name["ID"] = 1
+      name["ID"] = index
       name = pd.DataFrame.from_dict([name])
 
       # joins the dataframes into a single row of data
@@ -89,72 +122,34 @@ def current_weather(cities):
       data = pd.merge(data, country, left_on='ID', right_on='ID', sort=False)
       data = pd.merge(data, name, left_on='ID', right_on='ID', sort=False)
 
-      weather_data = pd.concat([weather_data, data])
+      # append data to weather_data as we iterate through each city
+      weather_data = pd.concat([weather_data, data], ignore_index=True)
 
-      # weather_data.set_index("ID", drop=True, inplace=True)
-      # weather_data = data.to_dict('list')
+    # generates a dictionary where each key contains a list of values as required by Tableau
+    weather_data.set_index('ID', drop=True, inplace=True)
+    weather_data = weather_data.to_dict('list')
 
     return weather_data
 
   payload = rest_current(api_key, cities)
-  data = transform_current(payload)
+  current_weather_data = transform_current(payload)
 
-  return data
+  return current_weather_data
 
-cities = {
-  "Austin": {
-    "lon": -97.7436995,
-    "lat": 30.2711286,
-  },
-  "Dallas": {
-    "lon": -96.7969,
-    "lat": 32.7763
-  },
-  "Houston": {
-    "lon": -95.3677,
-    "lat": 29.7589
-  },
-  "San Antonio": {
-    "lon": -98.4936,
-    "lat": 29.4241
-  },
-  "Denver": {
-    "lon": -104.9847,
-    "lat": 39.7392
-  },
-  "New Orleans": {
-    "lon": -90.0701,
-    "lat": 29.9499
-  },
-  "Tulsa": {
-    "lon": -95.9929,
-    "lat": 36.1557
-  },
-  "Oklahoma City": {
-    "lon": -97.5171,
-    "lat": 35.473
-  },
-  "Santa Fe": {
-    "lon": -105.9506,
-    "lat": 35.5167
-  },
-  "Albuquerque": {
-    "lon": -106.6511,
-    "lat": 35.0845
-  },
-  "Monterrey": {
-    "lon": -100.3167,
-    "lat": 25.6667
-  },
-  "Mexico City": {
-    "lon": -99.1277,
-    "lat": 19.4285
-  },
-  "Havana": {
-    "lon": -82.383,
-    "lat": 23.133
-  }
-}
+"""
+uncomment the following assignment and return statement to run this script as a Tabpy function
+"""
+# cities = pd.DataFrame(_arg1)
+# return current_weather(cities)
 
-# runs the script
+"""
+-------------------------------------------------------------------------------------
+Table Extension script ends here
+-------------------------------------------------------------------------------------
+"""
+
+"""
+uncomment the following assignment and return statement for local development
+"""
+cities = open('cities.csv')
 print(current_weather(cities))
