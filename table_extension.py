@@ -1,18 +1,21 @@
 """
 -------------------------------------------------------------------------------------
-OPENWEATHER API + TABLEAU
+TABLEAU WEB SERVICES (OPENWEATHER API)
 
-Request data from the OpenWeather API via Table Extensions
+Request data from the OpenWeather API in Tableau via Table Extensions.
 
-Table Extension scripts are essentially functions. In order to
-support local development, the final script is wrapped by certain
-imports and functions that can output results to your shell.
+Table Extension scripts are essentially functions with a return statement. 
+However, in order to support local development the final script is wrapped 
+by certain imports and functions that can output results to a shell without
+resulting in: (SyntaxError: 'return' outside function)
 
 To deploy this code via a Table Extension, only copy the code marked
 for usage in Tabpy and exclude any of the code used for local development.
 
 To secure the necessary API key, use a .env file (see README.md) during local
 development. This avoids pushing your key to public repositories such as Github.
+When deployed to a Table Extension you can hardcode the API key in the script or
+add it as an environment variable on the Tabpy Server.
 -------------------------------------------------------------------------------------
 """
 
@@ -38,7 +41,9 @@ import pandas as pd
 
 # this is where the Tabpy Function starts
 def current_weather(cities):
-  # change this to a hardcoded API key or set an environment variable in your Tabpy environment
+  """
+  change this to a hardcoded API key or set an environment variable in your Tabpy environment
+  """
   api_key = env_api_key
 
   # gets current weather data for the specified geolocation
@@ -47,13 +52,14 @@ def current_weather(cities):
     city_data = {}
     # iterate through the cities dict
     for city in cities:
-      # assign coordinates
-      lon = cities[city]["lon"]
-      lat = cities[city]["lat"]
+      # assign coordinate
+      name = city["city"]
+      lon = city["lon"]
+      lat = city["lat"]
       url = f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=imperial'
       response = requests.get(url)
       payload = response.json()
-      city_data[city] = payload
+      city_data[name] = payload
     return city_data
 
   # creates a dataframe from the JSON payload with current weather
@@ -151,5 +157,8 @@ Table Extension script ends here
 """
 uncomment the following assignment and return statement for local development
 """
-cities = open('cities.csv')
+cities_df = pd.read_csv('cities.csv', header=[0])
+
+cities = cities_df.to_dict('records')
+
 print(current_weather(cities))
