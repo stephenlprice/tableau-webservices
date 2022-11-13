@@ -36,7 +36,6 @@ Table Extension script starts here
 -------------------------------------------------------------------------------------
 """
 # imports used by the Tabpy Function
-import requests
 import pandas as pd
 from requests_futures.sessions import FuturesSession
 
@@ -48,21 +47,12 @@ def current_weather(cities):
 
   # gets current weather data for the specified geolocation
   def rest_current(api_key, cities):
-    # a list of current weather data per city
+    # a dict of current weather data per city
     city_data = {}
 
-    # iterate through the cities dict
-    # for city in cities:
-    #   # assign coordinate
-    #   name = city["city"]
-    #   lon = city["lon"]
-    #   lat = city["lat"]
-    #   url = f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=imperial'
-    #   response = requests.get(url)
-    #   payload = response.json()
-    #   city_data[name] = payload
-
+    # session object with python 3.2's concurrent.futures allowing for async requests
     session = FuturesSession()
+
     for city in cities:
       name = city["city"]
       lon = city["lon"]
@@ -70,8 +60,11 @@ def current_weather(cities):
       parameters = f'lat={lat}&lon={lon}&appid={api_key}&units=imperial'
       url = f'https://api.openweathermap.org/data/2.5/weather?{parameters}'
 
+      # futures are run in the background and are non-blocking
       future = session.get(url)
+      # catching the returned future, .result() returns the response
       result = future.result()
+      # response is serialized into json and inserted into the dict
       payload = result.json()
       city_data[name] = payload
 
