@@ -14,63 +14,6 @@ Proof of Concept for Tableau connectivity to Web Services via Table Extensions.
 http://api.openweathermap.org/geo/1.0/direct?q=austin,tx,840&appid=API_KEY
 ```
 
-### Coordinates
-
-```json
-  "Austin": {
-    "lon": -97.7436995,
-    "lat": 30.2711286,
-  },
-  "Dallas": {
-    "lon": -96.7969,
-    "lat": 32.7763
-  },
-  "Houston": {
-    "lon": -95.3677,
-    "lat": 29.7589
-  },
-  "San Antonio": {
-    "lon": -98.4936,
-    "lat": 29.4241
-  },
-  "Denver": {
-    "lon": -104.9847,
-    "lat": 39.7392
-  },
-  "New Orleans": {
-    "lon": -90.0701,
-    "lat": 29.9499
-  },
-  "Tulsa": {
-    "lon": -95.9929,
-    "lat": 36.1557
-  },
-  "Oklahoma City": {
-    "lon": -97.5171,
-    "lat": 35.473
-  },
-  "Santa Fe": {
-    "lon": -105.9506,
-    "lat": 35.5167
-  },
-  "Albuquerque": {
-    "lon": -106.6511,
-    "lat": 35.0845
-  },
-  "Monterrey": {
-    "lon": -100.3167,
-    "lat": 25.6667
-  },
-  "Mexico City": {
-    "lon": -99.1277,
-    "lat": 19.4285
-  },
-  "Havana": {
-    "lon": -82.383,
-    "lat": 23.133
-  }
-```
-
 ### Sample Response
 ```json
 {
