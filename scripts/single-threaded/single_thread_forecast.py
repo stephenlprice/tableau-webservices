@@ -67,21 +67,19 @@ def forecast_weather(cities):
     forecast_data = pd.DataFrame()
     index = 0
     for city in city_data:
-      index = index + 1
-
-      # location
-      location = {}
-      location["city_id"]= city_data[city]["city"]["id"]
-      location["name"]= city_data[city]["city"]["name"]
-      location["country"]= city_data[city]["city"]["country"]
-      location["lat"]= city_data[city]["city"]["coord"]["lat"]
-      location["lon"]= city_data[city]["city"]["coord"]["lon"]
-      location["ID"] = index
-      location = pd.DataFrame.from_dict([location])
-
       # payload per city contains a list with 5 day forecast every 3 hours
       forecasts = city_data[city]["list"]
       for forecast in forecasts:
+        index = index + 1
+        # location
+        location = {}
+        location["city_id"]= city_data[city]["city"]["id"]
+        location["name"]= city_data[city]["city"]["name"]
+        location["country"]= city_data[city]["city"]["country"]
+        location["lat"]= city_data[city]["city"]["coord"]["lat"]
+        location["lon"]= city_data[city]["city"]["coord"]["lon"]
+        location["ID"] = index
+        location = pd.DataFrame.from_dict([location])
         # timestamp and unix epoch
         time = {}
         time["timestamp"] = forecast["dt_txt"]
@@ -127,17 +125,15 @@ def forecast_weather(cities):
         rain = pd.DataFrame.from_dict([rain])
 
         # joins the dataframes into a single row of data
-        df_forecast = pd.merge(time, main, left_on='ID', right_on='ID', sort=False)
+        df_forecast = pd.merge(location, time, left_on='ID', right_on='ID', sort=False)
+        df_forecast = pd.merge(df_forecast, main, left_on='ID', right_on='ID', sort=False)
         df_forecast = pd.merge(df_forecast, weather, left_on='ID', right_on='ID', sort=False)
         df_forecast = pd.merge(df_forecast, wind, left_on='ID', right_on='ID', sort=False)
         df_forecast = pd.merge(df_forecast, visibility, left_on='ID', right_on='ID', sort=False)
         df_forecast = pd.merge(df_forecast, rain, left_on='ID', right_on='ID', sort=False)
 
-      # join the forecast dataframe with the location dataframe
-      df_final = pd.merge(df_forecast, location, left_on='ID', right_on='ID', sort=False)
-
-      # append data to forecast_data as we iterate through each city
-      forecast_data = pd.concat([forecast_data, df_final], ignore_index=True)
+        # append data to forecast_data as we iterate through each city
+        forecast_data = pd.concat([forecast_data, df_forecast], ignore_index=True)
 
     # generates a dictionary where each key contains a list of values as required by Tableau
     forecast_data.set_index('ID', drop=True, inplace=True)
