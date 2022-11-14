@@ -125,6 +125,7 @@ def current_weather(cities):
       # name (city)
       name = {}
       name["name"] = city_data[city]["name"]
+      name["city_id"]= city_data[city]["id"]
       name["ID"] = index
       name = pd.DataFrame.from_dict([name])
 
