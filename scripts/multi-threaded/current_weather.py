@@ -2,7 +2,7 @@
 -------------------------------------------------------------------------------------
 *******           TABLEAU WEB SERVICES (OPENWEATHER API)           *******
 
-Request data from the OpenWeather API in Tableau via Table Extensions.
+Request current weather data from the OpenWeather API via Table Extensions.
 
 Table Extension scripts are essentially functions with a return statement. 
 However, in order to support local development the final script is wrapped 
@@ -37,6 +37,7 @@ Table Extension script starts here
 """
 # imports used by the Tabpy Function
 import pandas as pd
+from concurrent.futures import ThreadPoolExecutor
 from requests_futures.sessions import FuturesSession
 
 def current_weather(cities):
@@ -51,7 +52,7 @@ def current_weather(cities):
     city_data = {}
 
     # session object with python 3.2's concurrent.futures allowing for async requests
-    session = FuturesSession()
+    session = FuturesSession(executor=ThreadPoolExecutor(max_workers=6))
 
     for city in cities:
       name = city["city"]
@@ -124,6 +125,7 @@ def current_weather(cities):
       # name (city)
       name = {}
       name["name"] = city_data[city]["name"]
+      name["city_id"]= city_data[city]["id"]
       name["ID"] = index
       name = pd.DataFrame.from_dict([name])
 
@@ -145,9 +147,9 @@ def current_weather(cities):
 
     return weather_data
 
+  # workflow: 1. rest calls, 2. transform data, 3. return transformed data
   payload = rest_current(api_key, cities)
   current_weather_data = transform_current(payload)
-
   return current_weather_data
 
 """
@@ -171,4 +173,6 @@ cities_df = pd.read_csv('cities.csv', header=[0])
 # converts the dataframe to a dict with records orient
 cities = cities_df.to_dict('records')
 
-print(current_weather(cities))
+# print the resulting dataset as a dataframe for readability
+print(pd.DataFrame(current_weather(cities)))
+# print(current_weather(cities))
