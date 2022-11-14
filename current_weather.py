@@ -147,9 +147,9 @@ def current_weather(cities):
 
     return weather_data
 
+  # workflow: 1. rest calls, 2. transform data, 3. return transformed data
   payload = rest_current(api_key, cities)
   current_weather_data = transform_current(payload)
-
   return current_weather_data
 
 """
@@ -173,4 +173,6 @@ cities_df = pd.read_csv('cities.csv', header=[0])
 # converts the dataframe to a dict with records orient
 cities = cities_df.to_dict('records')
 
-print(current_weather(cities))
+# print the resulting dataset as a dataframe for readability
+print(pd.DataFrame(current_weather(cities)))
+# print(current_weather(cities))
