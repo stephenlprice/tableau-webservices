@@ -78,6 +78,16 @@ def current_weather(cities):
     index = 0
     for city in city_data:
       index = index + 1
+
+      # location
+      location = {}
+      location["city_id"]= city_data[city]["id"]
+      location["name"]= city_data[city]["name"]
+      location["country"]= city_data[city]["country"]
+      location["lat"]= city_data[city]["lat"]
+      location["lon"]= city_data[city]["lon"]
+      location = pd.DataFrame.from_dict(location)
+
       # payload per city contains a list with 5 day forecast every 3 hours
       forecasts = city_data[city]["list"]
 
@@ -89,7 +99,7 @@ def current_weather(cities):
         time["ID"] = index
         time = pd.DataFrame.from_dict(time)
 
-        # main weather data
+        # main
         main = forecast["main"]
         if "sea_level" in main:
           del main["sea_level"]
@@ -98,9 +108,35 @@ def current_weather(cities):
         main["ID"] = index
         main = pd.DataFrame.from_dict([main])
 
+        # weather
+        weather = forecast["weather"][0]
+        if "id" in weather:
+          del weather["id"]
+        weather["clouds"] = forecast["clouds"]["all"]
+        weather["ID"] = index
+        weather = pd.DataFrame.from_dict([weather])
+
+        # wind
+        wind = forecast["wind"]
+        wind["ID"] = index
+        wind = pd.DataFrame.from_dict(wind)
+
+        # visibility
+        visibility = forecast["visibility"]
+        visibility["ID"] = index
+        visibility = pd.DataFrame.from_dict(visibility)
+
+        # rain
+        rain = {}
+        if "rain" not in weather:
+          rain["rain"] = 0
+        else:
+          rain["rain"] = visibility = forecast["rain"]["3h"]
+        rain["ID"] = index
+        rain = pd.DataFrame.from_dict(rain)
 
 
-        print(f'timestamp: {timestamp}')
+        # print(f'time: {time}')
 
     return weather_data
 
