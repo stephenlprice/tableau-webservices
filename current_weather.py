@@ -2,7 +2,7 @@
 -------------------------------------------------------------------------------------
 *******           TABLEAU WEB SERVICES (OPENWEATHER API)           *******
 
-Request data from the OpenWeather API in Tableau via Table Extensions.
+Request current weather data from the OpenWeather API via Table Extensions.
 
 Table Extension scripts are essentially functions with a return statement. 
 However, in order to support local development the final script is wrapped 
@@ -37,6 +37,7 @@ Table Extension script starts here
 """
 # imports used by the Tabpy Function
 import pandas as pd
+from concurrent.futures import ThreadPoolExecutor
 from requests_futures.sessions import FuturesSession
 
 def current_weather(cities):
@@ -51,7 +52,7 @@ def current_weather(cities):
     city_data = {}
 
     # session object with python 3.2's concurrent.futures allowing for async requests
-    session = FuturesSession()
+    session = FuturesSession(executor=ThreadPoolExecutor(max_workers=6))
 
     for city in cities:
       name = city["city"]
