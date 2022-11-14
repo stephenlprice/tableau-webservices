@@ -28,8 +28,6 @@ load_dotenv(".env")
 # calling environ is expensive, this saves environment variables to a dictionary
 env_dict = dict(os.environ)
 
-env_api_key = env_dict["API_KEY"]
-
 """
 -------------------------------------------------------------------------------------
 Table Extension script starts here
@@ -40,11 +38,7 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 from requests_futures.sessions import FuturesSession
 
-def forecast_weather(cities):
-  """
-  change this to a hardcoded API key or set an environment variable in your Tabpy environment
-  """
-  api_key = env_api_key
+def forecast_weather(cities, api_key):
 
   # gets current weather data for the specified geolocation
   def rest_current(api_key, cities):
@@ -158,8 +152,10 @@ def forecast_weather(cities):
   return forecast_weather_data
 
 """
-uncomment the following assignments and return statement to run this script as a Tabpy function
+uncomment the following assignments and return statement to run this script as a Tabpy function.
+change this to a hardcoded API key or set an environment variable in your Tabpy environment.
 """
+#api_key = "API_KEY"
 ##creates a dataframe of cities from the input table (.csv file)
 #cities_df = pd.DataFrame(_arg1)
 ##converts the dataframe to a dict with records orient
@@ -173,11 +169,12 @@ Table Extension script ends here
 -------------------------------------------------------------------------------------
 """
 
+api_key = env_dict["API_KEY"]
 # reads the .csv files containing a list of cities
 cities_df = pd.read_csv('cities.csv', header=[0])
 # converts the dataframe to a dict with records orient
 cities = cities_df.to_dict('records')
 
 # print the resulting dataset as a dataframe for readability
-print(pd.DataFrame(forecast_weather(cities)))
+print(pd.DataFrame(forecast_weather(cities,api_key)))
 # print(forecast_weather(cities))
