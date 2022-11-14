@@ -2,7 +2,7 @@
 -------------------------------------------------------------------------------------
 *******           TABLEAU WEB SERVICES (OPENWEATHER API)           *******
 
-Request data from the OpenWeather API in Tableau via Table Extensions.
+Request current weather data from the OpenWeather API via Table Extensions.
 
 Table Extension scripts are essentially functions with a return statement. 
 However, in order to support local development the final script is wrapped 
@@ -55,7 +55,8 @@ def current_weather(cities):
       name = city["city"]
       lon = city["lon"]
       lat = city["lat"]
-      url = f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=imperial'
+      parameters = f'lat={lat}&lon={lon}&appid={api_key}&units=imperial'
+      url = f'https://api.openweathermap.org/data/2.5/weather?{parameters}'
       response = requests.get(url)
       payload = response.json()
       city_data[name] = payload
