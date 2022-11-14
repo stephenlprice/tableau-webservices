@@ -86,11 +86,11 @@ def current_weather(cities):
       location["country"]= city_data[city]["country"]
       location["lat"]= city_data[city]["lat"]
       location["lon"]= city_data[city]["lon"]
+      location["ID"] = index
       location = pd.DataFrame.from_dict(location)
 
       # payload per city contains a list with 5 day forecast every 3 hours
       forecasts = city_data[city]["list"]
-
       for forecast in forecasts:
         # timestamp and unix epoch
         time = {}
@@ -135,8 +135,18 @@ def current_weather(cities):
         rain["ID"] = index
         rain = pd.DataFrame.from_dict(rain)
 
+        # joins the dataframes into a single row of data
+        df_forecast = pd.merge(time, main, left_on='ID', right_on='ID', sort=False)
+        df_forecast = pd.merge(df_forecast, weather, left_on='ID', right_on='ID', sort=False)
+        df_forecast = pd.merge(df_forecast, wind, left_on='ID', right_on='ID', sort=False)
+        df_forecast = pd.merge(df_forecast, visibility, left_on='ID', right_on='ID', sort=False)
+        df_forecast = pd.merge(df_forecast, rain, left_on='ID', right_on='ID', sort=False)
 
-        # print(f'time: {time}')
+      # join the forecast dataframe with the location dataframe
+      df_final = pd.merge(df_forecast, location, left_on='ID', right_on='ID', sort=False)
+
+
+
 
     return weather_data
 
