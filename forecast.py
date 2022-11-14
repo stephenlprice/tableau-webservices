@@ -40,7 +40,7 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 from requests_futures.sessions import FuturesSession
 
-def current_weather(cities):
+def forecast_weather(cities):
   """
   change this to a hardcoded API key or set an environment variable in your Tabpy environment
   """
@@ -52,7 +52,7 @@ def current_weather(cities):
     city_data = {}
 
     # session object with python 3.2's concurrent.futures allowing for async requests
-    session = FuturesSession(executor=ThreadPoolExecutor(max_workers=6))
+    session = FuturesSession(executor=ThreadPoolExecutor(max_workers=15))
 
     for city in cities:
       # assign coordinate
@@ -74,20 +74,20 @@ def current_weather(cities):
 
   # creates a dataframe from the JSON payload with current weather
   def transform_current(city_data):
-    weather_data = pd.DataFrame()
+    forecast_data = pd.DataFrame()
     index = 0
     for city in city_data:
       index = index + 1
 
       # location
       location = {}
-      location["city_id"]= city_data[city]["id"]
-      location["name"]= city_data[city]["name"]
-      location["country"]= city_data[city]["country"]
-      location["lat"]= city_data[city]["lat"]
-      location["lon"]= city_data[city]["lon"]
+      location["city_id"]= city_data[city]["city"]["id"]
+      location["name"]= city_data[city]["city"]["name"]
+      location["country"]= city_data[city]["city"]["country"]
+      location["lat"]= city_data[city]["city"]["coord"]["lat"]
+      location["lon"]= city_data[city]["city"]["coord"]["lon"]
       location["ID"] = index
-      location = pd.DataFrame.from_dict(location)
+      location = pd.DataFrame.from_dict([location])
 
       # payload per city contains a list with 5 day forecast every 3 hours
       forecasts = city_data[city]["list"]
@@ -97,7 +97,7 @@ def current_weather(cities):
         time["timestamp"] = forecast["dt_txt"]
         time["unix_epoch"] = forecast["dt"]
         time["ID"] = index
-        time = pd.DataFrame.from_dict(time)
+        time = pd.DataFrame.from_dict([time])
 
         # main
         main = forecast["main"]
@@ -119,12 +119,13 @@ def current_weather(cities):
         # wind
         wind = forecast["wind"]
         wind["ID"] = index
-        wind = pd.DataFrame.from_dict(wind)
+        wind = pd.DataFrame.from_dict([wind])
 
         # visibility
-        visibility = forecast["visibility"]
+        visibility = {}
+        visibility["visibility"] = forecast["visibility"]
         visibility["ID"] = index
-        visibility = pd.DataFrame.from_dict(visibility)
+        visibility = pd.DataFrame.from_dict([visibility])
 
         # rain
         rain = {}
@@ -133,7 +134,7 @@ def current_weather(cities):
         else:
           rain["rain"] = visibility = forecast["rain"]["3h"]
         rain["ID"] = index
-        rain = pd.DataFrame.from_dict(rain)
+        rain = pd.DataFrame.from_dict([rain])
 
         # joins the dataframes into a single row of data
         df_forecast = pd.merge(time, main, left_on='ID', right_on='ID', sort=False)
@@ -145,15 +146,19 @@ def current_weather(cities):
       # join the forecast dataframe with the location dataframe
       df_final = pd.merge(df_forecast, location, left_on='ID', right_on='ID', sort=False)
 
+      # append data to forecast_data as we iterate through each city
+      forecast_data = pd.concat([forecast_data, df_final], ignore_index=True)
 
+    # generates a dictionary where each key contains a list of values as required by Tableau
+    forecast_data.set_index('ID', drop=True, inplace=True)
+    forecast_data = forecast_data.to_dict('list')
 
+    return forecast_data
 
-    return weather_data
-
+  # workflow: 1. rest calls, 2. transform data, 3. return transformed data
   payload = rest_current(api_key, cities)
-  current_weather_data = transform_current(payload)
-
-  return current_weather_data
+  forecast_weather_data = transform_current(payload)
+  return forecast_weather_data
 
 """
 uncomment the following assignments and return statement to run this script as a Tabpy function
@@ -162,7 +167,7 @@ uncomment the following assignments and return statement to run this script as a
 #cities_df = pd.DataFrame(_arg1)
 ##converts the dataframe to a dict with records orient
 #cities = cities_df.to_dict('records')
-#return current_weather(cities)
+#return forecast_weather(cities)
 
 
 """
@@ -176,4 +181,6 @@ cities_df = pd.read_csv('cities.csv', header=[0])
 # converts the dataframe to a dict with records orient
 cities = cities_df.to_dict('records')
 
-print(current_weather(cities))
+# print the resulting dataset as a dataframe for readability
+print(pd.DataFrame(forecast_weather(cities)))
+# print(forecast_weather(cities))
