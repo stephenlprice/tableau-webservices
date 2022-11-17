@@ -52,8 +52,8 @@ def current_weather(cities, api_key):
       name = city["city"]
       lon = city["lon"]
       lat = city["lat"]
-      parameters = f'lat={lat}&lon={lon}&appid={api_key}&units=imperial'
-      url = f'https://api.openweathermap.org/data/2.5/weather?{parameters}'
+      query_parameters = f'lat={lat}&lon={lon}&appid={api_key}&units=imperial'
+      url = f'https://api.openweathermap.org/data/2.5/weather?{query_parameters}'
 
       # futures are run in the background and are non-blocking
       future = session.get(url)
