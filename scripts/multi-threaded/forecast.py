@@ -71,14 +71,11 @@ def forecast_weather(cities, api_key):
 
     # created a thread pool for parralel processing
     with ThreadPoolExecutor(max_workers=12) as executor:  
+      print(f'city_forecast: {city_forecast}')
       # submit the task
       processed_data = executor.submit(process_data, city_forecast, forecast_df, index)
       # get the result and format the dataframe to a dict of lists for Tableau
       forecast_data = output_table(processed_data.result())
-
-    # runs the same code without using a thread pool
-    # processed_data = process_data(city_forecast, forecast_df, index)
-    # forecast_data = output_table(processed_data)
  
     return forecast_data
       
@@ -89,6 +86,7 @@ def forecast_weather(cities, api_key):
     city_row = create_rows(city_forecast, index)
     # creates a single dataframe with all rows
     processed_data = append_rows(city_row, forecast_df)
+    print(f'processed_data: {processed_data}')
 
     process_cnt = process_cnt + 1
     print(f'process_cnt: {process_cnt}')
@@ -174,7 +172,7 @@ def forecast_weather(cities, api_key):
   def append_rows(city_row, forecast_df):
     # append data to forecast_df as we iterate through each city
     forecast_df = pd.concat([forecast_df, city_row], ignore_index=True)
-
+    print(f'forecast_df: {forecast_df}')
     return forecast_df
 
 
@@ -184,33 +182,26 @@ def forecast_weather(cities, api_key):
     forecast_data = forecast_df.to_dict('list')
     return forecast_data
 
-
+  # return statement for forecast_weather()
   return get_data(api_key, cities)
 
-"""
-uncomment the following assignments and return statement to run this script as a Tabpy function.
-change this to a hardcoded API key or set an environment variable in your Tabpy environment.
-"""
-#api_key = "API_KEY"
-##creates a dataframe of cities from the input table (.csv file)
-#cities_df = pd.DataFrame(_arg1)
-##converts the dataframe to a dict with records orient
-#cities = cities_df.to_dict('records')
-#return forecast_weather(cities)
 
-
-"""
--------------------------------------------------------------------------------------
-Table Extension script ends here
--------------------------------------------------------------------------------------
-"""
-
-api_key = env_dict["API_KEY"]
-# reads the .csv files containing a list of cities
-cities_df = pd.read_csv('cities.csv', header=[0])
-# converts the dataframe to a dict with records orient
-cities = cities_df.to_dict('records')
-
-# print the resulting dataset as a dataframe for readability
-print(pd.DataFrame(forecast_weather(cities, api_key)))
-# print(forecast_weather(cities))
+# protects the entry point of the script used during local development
+if __name__ == '__main__':
+  api_key = env_dict["API_KEY"]
+  # reads the .csv files containing a list of cities
+  cities_df = pd.read_csv('cities.csv', header=[0])
+  # converts the dataframe to a dict with records orient
+  cities = cities_df.to_dict('records')
+  # print the resulting dataset as a dataframe for readability
+  print(pd.DataFrame(forecast_weather(cities, api_key)))
+else:
+  """
+  uncomment the following assignments and return statement to run this script as a Tabpy function.
+  """
+  #api_key = "API_KEY"
+  # #creates a dataframe of cities from the input table (.csv file)
+  #cities_df = pd.DataFrame(_arg1)
+  # #converts the dataframe to a dict with records orient
+  #cities = cities_df.to_dict('records')
+  #return forecast_weather(cities)
