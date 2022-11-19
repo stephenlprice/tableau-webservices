@@ -177,7 +177,7 @@ def forecast_weather(cities, api_key):
     forecast_data = forecast_df.to_dict('list')
     return forecast_data
 
-
+  # return statement for forecast_weather()
   return get_data(api_key, cities)
 
 
@@ -190,12 +190,11 @@ if __name__ == '__main__':
   cities = cities_df.to_dict('records')
   # print the resulting dataset as a dataframe for readability
   print(pd.DataFrame(forecast_weather(cities, api_key)))
-
 else:
-  api_key = "API_KEY"
   """
   uncomment the following assignments and return statement to run this script as a Tabpy function.
   """
+  # api_key = "API_KEY"
   # #creates a dataframe of cities from the input table (.csv file)
   # cities_df = pd.DataFrame(_arg1)
   # #converts the dataframe to a dict with records orient
