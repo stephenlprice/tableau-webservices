@@ -146,30 +146,23 @@ def current_weather(cities, api_key):
   current_weather_data = transform_current(payload)
   return current_weather_data
 
-"""
-uncomment the following assignments and return statement to run this script as a Tabpy function.
-change this to a hardcoded API key or set an environment variable in your Tabpy environment.
-"""
-#api_key = "API_KEY"
-##creates a dataframe of cities from the input table (.csv file)
-#cities_df = pd.DataFrame(_arg1)
-##converts the dataframe to a dict with records orient
-#cities = cities_df.to_dict('records')
-#return current_weather(cities,api_key)
 
-
-"""
--------------------------------------------------------------------------------------
-Table Extension script ends here
--------------------------------------------------------------------------------------
-"""
-
-api_key = env_dict["API_KEY"]
-# reads the .csv files containing a list of cities
-cities_df = pd.read_csv('cities.csv', header=[0])
-# converts the dataframe to a dict with records orient
-cities = cities_df.to_dict('records')
-
-# print the resulting dataset as a dataframe for readability
-print(pd.DataFrame(current_weather(cities,api_key)))
-# print(current_weather(cities))
+# protects the entry point of the script used during local development
+if __name__ == '__main__':
+  api_key = env_dict["API_KEY"]
+  # reads the .csv files containing a list of cities
+  cities_df = pd.read_csv('cities.csv', header=[0])
+  # converts the dataframe to a dict with records orient
+  cities = cities_df.to_dict('records')
+  # print the resulting dataset as a dataframe for readability
+  print(pd.DataFrame(current_weather(cities,api_key)))
+else:
+  """
+  uncomment the following assignments and return statement to run this script as a Tabpy function.
+  """
+  #api_key = "API_KEY"
+  # #creates a dataframe of cities from the input table (.csv file)
+  #cities_df = pd.DataFrame(_arg1)
+  # #converts the dataframe to a dict with records orient
+  #cities = cities_df.to_dict('records')
+  #return current_weather(cities,api_key)
