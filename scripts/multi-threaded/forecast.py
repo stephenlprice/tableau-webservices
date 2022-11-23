@@ -35,30 +35,47 @@ Table Extension script starts here
 """
 # imports used by the Tabpy Function
 import pandas as pd
-from concurrent.futures import ThreadPoolExecutor
-from requests_futures.sessions import FuturesSession
+import concurrent.futures
+import requests
 
 # gets weather forecast data for the specified geolocations
 def get_data(cities, api_key):
-  # a dict of weather forecast data per city
+  # a dict to store weather forecast data for each city
   forecasts = {}
-  # session object with python 3.2's concurrent.futures allowing for async requests
-  session = FuturesSession(executor=ThreadPoolExecutor())
-  for city in cities:
-    # assign coordinate
-    name = city["city"]
-    lon = city["lon"]
-    lat = city["lat"]
-    query_parameters = f'lat={lat}&lon={lon}&appid={api_key}&units=imperial'
-    url = f'https://api.openweathermap.org/data/2.5/forecast?{query_parameters}'
+  # session object for HTTP persistent connections (https://requests.readthedocs.io/en/latest/user/advanced/#session-objects)
+  session = requests.Session()
+  # sends a request per city
+  def request_data(cities, api_key):
+    for city in cities:
+      lon = city["lon"]
+      lat = city["lat"]
+      query_parameters = f'lat={lat}&lon={lon}&appid={api_key}&units=imperial'
+      url = f'https://api.openweathermap.org/data/2.5/forecast?{query_parameters}'
+      
+      nonlocal session
+      req = session.get(url)
+      # response is serialized into json
+      payload = req.json()
+      # payload contains 8, 3hr forecast for 5 days (40 individual forecasts per city)
+      return payload
+  
+  # use a pool of threads to execute async calls (https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor)
+  with concurrent.futures.ThreadPoolExecutor() as executor:
+    # list comprehension runs request_data() for each iterable
+    results = [executor.submit(request_data, cities, api_key) for _ in cities]
     # futures are run in the background and are non-blocking
-    future = session.get(url)
-    # catching the returned future, .result() returns the response
-    result = future.result()
-    # response is serialized into json and inserted into the dict
-    payload = result.json()
-    forecasts[name] = payload
-
+    for future in concurrent.futures.as_completed(results):
+      try:
+        # catching the returned future
+        result = future.result()
+      except Exception as exc:
+        print('%r Data request failed: %s' % (results[future], exc))
+      else:
+        for city in cities:
+          # add the json response as a value for each city name key
+          name = city["city"]
+          forecasts[name] = result
+  # returns the dict with city name as key and json payload with 40 forecasts as value   
   return forecasts
 
 # creates dataframes from each 3hr forecast and appends them to a single dataframe
