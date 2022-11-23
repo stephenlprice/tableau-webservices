@@ -18,7 +18,6 @@ When deployed to a Table Extension you can hardcode the API key in the script or
 add it as an environment variable on the Tabpy Server.
 -------------------------------------------------------------------------------------
 """
-
 # imports used for local development
 import os, time
 from dotenv import load_dotenv
@@ -27,6 +26,7 @@ from dotenv import load_dotenv
 load_dotenv(".env")
 # calling environ is expensive, this saves environment variables to a dictionary
 env_dict = dict(os.environ)
+
 
 """
 -------------------------------------------------------------------------------------
@@ -37,7 +37,6 @@ Table Extension script starts here
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 from requests_futures.sessions import FuturesSession
-
 
 # gets weather forecast data for the specified geolocations
 def get_data(cities, api_key):
@@ -62,10 +61,10 @@ def get_data(cities, api_key):
 
   return forecasts
 
-
+# creates dataframes from each 3hr forecast and appends them to a single dataframe
 def process(forecasts):
   forecast_df = pd.DataFrame()
-  # append data as we iterate through each city
+  # append data to a dataframe as the process() iterates through each city
   def append_rows(forecast_row):
     nonlocal forecast_df
     # append data to forecast_df as we iterate through each city
@@ -138,22 +137,24 @@ def process(forecasts):
       forecast_row = pd.merge(forecast_row, wind, left_on='ID', right_on='ID', sort=False)
       forecast_row = pd.merge(forecast_row, visibility, left_on='ID', right_on='ID', sort=False)
       forecast_row = pd.merge(forecast_row, rain, left_on='ID', right_on='ID', sort=False)
-
+      
+      # appends each row to a single dataframe (forecast_df)
       append_rows(forecast_row)
 
   return forecast_df
 
 
+# output a dict of lists as required by Tableau
 def make_table(processed_data):
   processed_data.set_index('ID', drop=True, inplace=True)
-  # generates a dictionary where each key contains a list of values as required by Tableau
+  # generates a dictionary where each key contains a list of values
   processed_data = processed_data.to_dict('list')
   return processed_data
 
-# protects the entry point of the script used during local development
+# protects the entry point of the script so that this only runs during local development
 if __name__ == '__main__':
-  # used to time performance of the script
-  t1 = time.perf_counter()
+  # time module measures performance of each operation and the entire script
+  t_script_start = time.perf_counter()
   api_key = env_dict["API_KEY"]
   t_read_start = time.perf_counter()
   # reads the .csv files containing a list of cities
@@ -161,30 +162,35 @@ if __name__ == '__main__':
   # converts the dataframe to a dict with records orient
   cities = cities_df.to_dict('records')
   t_read_finish = time.perf_counter()
-  print(f'File read finished in {t_read_finish-t_read_start} second(s)')
+  t_read = t_read_finish-t_read_start
+  print(f'File read finished in {t_read} second(s)')
   
   t_rest_start = time.perf_counter()
   # request data from OpenWeather API
   forecasts = get_data(cities, api_key)
   t_rest_finish = time.perf_counter()
-  print(f'REST API calls finished in {t_rest_finish-t_rest_start} second(s)')
+  t_rest = t_rest_finish-t_rest_start
+  print(f'REST API calls finished in {t_rest} second(s)')
 
   t_process_start = time.perf_counter()
   # create a single dataframe containing all forecasts
   processed_data = process(forecasts)
   t_process_finish = time.perf_counter()
-  print(f'Data processing finished in {t_process_finish-t_process_start} second(s)')
+  t_process = t_process_finish-t_process_start
+  print(f'Data processing finished in {t_process} second(s)')
 
   t_table_start = time.perf_counter()
   # formats the dataframe into a dict for Tableau
   output_table = make_table(processed_data)
   t_table_finish = time.perf_counter()
-  print(f'Output table finished in {t_table_finish-t_table_start} second(s)')
+  t_table = t_table_finish-t_table_start
+  print(f'Output table finished in {t_table} second(s)')
 
   # print the resulting dataset as a dataframe for readability
   print(pd.DataFrame(output_table))
-  t2 = time.perf_counter()
-  print(f'Script finished in {t2-t1} second(s)')
+  t_script_finish = time.perf_counter()
+  t_script = t_script_finish-t_script_start
+  print(f'Script finished in {t_script} second(s)')
 else:
   """
   uncomment the following assignments and return statement to run this script as a Tabpy function.
