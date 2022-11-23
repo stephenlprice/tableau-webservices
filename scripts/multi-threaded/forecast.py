@@ -38,140 +38,153 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 from requests_futures.sessions import FuturesSession
 
-def forecast_weather(cities, api_key):
+
+# gets weather forecast data for the specified geolocations
+def get_data(cities, api_key):
+  # a dict of weather forecast data per city
+  forecasts = {}
+  # session object with python 3.2's concurrent.futures allowing for async requests
+  session = FuturesSession(executor=ThreadPoolExecutor())
+  for city in cities:
+    # assign coordinate
+    name = city["city"]
+    lon = city["lon"]
+    lat = city["lat"]
+    query_parameters = f'lat={lat}&lon={lon}&appid={api_key}&units=imperial'
+    url = f'https://api.openweathermap.org/data/2.5/forecast?{query_parameters}'
+    # futures are run in the background and are non-blocking
+    future = session.get(url)
+    # catching the returned future, .result() returns the response
+    result = future.result()
+    # response is serialized into json and inserted into the dict
+    payload = result.json()
+    forecasts[name] = payload
+
+  return forecasts
+
+
+def process(forecasts):
   forecast_df = pd.DataFrame()
-  # gets weather forecast data for the specified geolocations
-  def get_data(cities, api_key):
-    # a dict of weather forecast data per city
-    forecasts = {}
-    # session object with python 3.2's concurrent.futures allowing for async requests
-    session = FuturesSession(executor=ThreadPoolExecutor())
-    for city in cities:
-      # assign coordinate
-      name = city["city"]
-      lon = city["lon"]
-      lat = city["lat"]
-      query_parameters = f'lat={lat}&lon={lon}&appid={api_key}&units=imperial'
-      url = f'https://api.openweathermap.org/data/2.5/forecast?{query_parameters}'
-      # futures are run in the background and are non-blocking
-      future = session.get(url)
-      # catching the returned future, .result() returns the response
-      result = future.result()
-      # response is serialized into json and inserted into the dict
-      payload = result.json()
-      forecasts[name] = payload
-    # create a single dataframe containing all forecasts
-    processed_data = process(forecasts)
-    # formats the dataframe into a dict for Tableau
-    return output_table(processed_data)
-
-
-  def process(forecasts):
-    # each row will have a unique index
-    index = 0
-    for forecast in forecasts:
-      forecast_list = forecasts[forecast]["list"]
-      for forecast_3hr in forecast_list:
-        index = index + 1
-        # location
-        location = {}
-        location["city_id"]= forecasts[forecast]["city"]["id"]
-        location["name"]= forecasts[forecast]["city"]["name"]
-        location["country"]= forecasts[forecast]["city"]["country"]
-        location["lat"]= forecasts[forecast]["city"]["coord"]["lat"]
-        location["lon"]= forecasts[forecast]["city"]["coord"]["lon"]
-        location["ID"] = index
-        location = pd.DataFrame.from_dict([location])
-
-        # timestamp and unix epoch
-        time = {}
-        time["timestamp"] = forecast_3hr["dt_txt"]
-        time["unix_epoch"] = forecast_3hr["dt"]
-        time["ID"] = index
-        time = pd.DataFrame.from_dict([time])
-
-        # main
-        main = forecast_3hr["main"]
-        if "sea_level" in main:
-          del main["sea_level"]
-        if "grnd_level" in main:
-          del main["grnd_level"]
-        main["ID"] = index
-        main = pd.DataFrame.from_dict([main])
-
-        # weather
-        weather = forecast_3hr["weather"][0]
-        if "id" in weather:
-          del weather["id"]
-        weather["clouds"] = forecast_3hr["clouds"]["all"]
-        weather["ID"] = index
-        weather = pd.DataFrame.from_dict([weather])
-
-        # wind
-        wind = forecast_3hr["wind"]
-        wind["ID"] = index
-        wind = pd.DataFrame.from_dict([wind])
-
-        # visibility
-        visibility = {}
-        visibility["visibility"] = forecast_3hr["visibility"]
-        visibility["ID"] = index
-        visibility = pd.DataFrame.from_dict([visibility])
-
-        # rain
-        rain = {}
-        if "rain" not in weather:
-          rain["rain"] = 0
-        else:
-          rain["rain"] = visibility = forecast_3hr["rain"]["3h"]
-        rain["ID"] = index
-        rain = pd.DataFrame.from_dict([rain])
-
-        # joins the dataframes into a single row of data
-        forecast_row = pd.merge(location, time, left_on='ID', right_on='ID', sort=False)
-        forecast_row = pd.merge(forecast_row, main, left_on='ID', right_on='ID', sort=False)
-        forecast_row = pd.merge(forecast_row, weather, left_on='ID', right_on='ID', sort=False)
-        forecast_row = pd.merge(forecast_row, wind, left_on='ID', right_on='ID', sort=False)
-        forecast_row = pd.merge(forecast_row, visibility, left_on='ID', right_on='ID', sort=False)
-        forecast_row = pd.merge(forecast_row, rain, left_on='ID', right_on='ID', sort=False)
-
-        # append data as we iterate through each city
-        append_rows(forecast_row)
-
-    nonlocal forecast_df
-    return forecast_df
-
-
+  # append data as we iterate through each city
   def append_rows(forecast_row):
     nonlocal forecast_df
     # append data to forecast_df as we iterate through each city
     forecast_df = pd.concat([forecast_df, forecast_row], ignore_index=True)
 
+  # each row will have a unique index
+  index = 0
+  for forecast in forecasts:
+    forecast_list = forecasts[forecast]["list"]
+    for forecast_3hr in forecast_list:
+      index = index + 1
+      # location
+      location = {}
+      location["city_id"]= forecasts[forecast]["city"]["id"]
+      location["name"]= forecasts[forecast]["city"]["name"]
+      location["country"]= forecasts[forecast]["city"]["country"]
+      location["lat"]= forecasts[forecast]["city"]["coord"]["lat"]
+      location["lon"]= forecasts[forecast]["city"]["coord"]["lon"]
+      location["ID"] = index
+      location = pd.DataFrame.from_dict([location])
 
-  def output_table(processed_data):
-    processed_data.set_index('ID', drop=True, inplace=True)
-    # generates a dictionary where each key contains a list of values as required by Tableau
-    processed_data = processed_data.to_dict('list')
-    return processed_data
+      # timestamp and unix epoch
+      time = {}
+      time["timestamp"] = forecast_3hr["dt_txt"]
+      time["unix_epoch"] = forecast_3hr["dt"]
+      time["ID"] = index
+      time = pd.DataFrame.from_dict([time])
+
+      # main
+      main = forecast_3hr["main"]
+      if "sea_level" in main:
+        del main["sea_level"]
+      if "grnd_level" in main:
+        del main["grnd_level"]
+      main["ID"] = index
+      main = pd.DataFrame.from_dict([main])
+
+      # weather
+      weather = forecast_3hr["weather"][0]
+      if "id" in weather:
+        del weather["id"]
+      weather["clouds"] = forecast_3hr["clouds"]["all"]
+      weather["ID"] = index
+      weather = pd.DataFrame.from_dict([weather])
+
+      # wind
+      wind = forecast_3hr["wind"]
+      wind["ID"] = index
+      wind = pd.DataFrame.from_dict([wind])
+
+      # visibility
+      visibility = {}
+      visibility["visibility"] = forecast_3hr["visibility"]
+      visibility["ID"] = index
+      visibility = pd.DataFrame.from_dict([visibility])
+
+      # rain
+      rain = {}
+      if "rain" not in weather:
+        rain["rain"] = 0
+      else:
+        rain["rain"] = visibility = forecast_3hr["rain"]["3h"]
+      rain["ID"] = index
+      rain = pd.DataFrame.from_dict([rain])
+
+      # joins the dataframes into a single row of data
+      forecast_row = pd.merge(location, time, left_on='ID', right_on='ID', sort=False)
+      forecast_row = pd.merge(forecast_row, main, left_on='ID', right_on='ID', sort=False)
+      forecast_row = pd.merge(forecast_row, weather, left_on='ID', right_on='ID', sort=False)
+      forecast_row = pd.merge(forecast_row, wind, left_on='ID', right_on='ID', sort=False)
+      forecast_row = pd.merge(forecast_row, visibility, left_on='ID', right_on='ID', sort=False)
+      forecast_row = pd.merge(forecast_row, rain, left_on='ID', right_on='ID', sort=False)
+
+      append_rows(forecast_row)
+
+  return forecast_df
 
 
-  # return statement for forecast_weather()
-  return get_data(cities, api_key)
-
+def make_table(processed_data):
+  processed_data.set_index('ID', drop=True, inplace=True)
+  # generates a dictionary where each key contains a list of values as required by Tableau
+  processed_data = processed_data.to_dict('list')
+  return processed_data
 
 # protects the entry point of the script used during local development
 if __name__ == '__main__':
-  api_key = env_dict["API_KEY"]
-  # reads the .csv files containing a list of cities
-  cities_df = pd.read_csv('cities.csv', header=[0])
-  # converts the dataframe to a dict with records orient
-  cities = cities_df.to_dict('records')
   # used to time performance of the script
   t1 = time.perf_counter()
+  api_key = env_dict["API_KEY"]
+  t_read_start = time.perf_counter()
+  # reads the .csv files containing a list of cities
+  cities_df = pd.read_csv('cities2.csv', header=[0])
+  # converts the dataframe to a dict with records orient
+  cities = cities_df.to_dict('records')
+  t_read_finish = time.perf_counter()
+  print(f'File read finished in {t_read_finish-t_read_start} second(s)')
+  
+  t_rest_start = time.perf_counter()
+  # request data from OpenWeather API
+  forecasts = get_data(cities, api_key)
+  t_rest_finish = time.perf_counter()
+  print(f'REST API calls finished in {t_rest_finish-t_rest_start} second(s)')
+
+  t_process_start = time.perf_counter()
+  # create a single dataframe containing all forecasts
+  processed_data = process(forecasts)
+  t_process_finish = time.perf_counter()
+  print(f'Data processing finished in {t_process_finish-t_process_start} second(s)')
+
+  t_table_start = time.perf_counter()
+  # formats the dataframe into a dict for Tableau
+  output_table = make_table(processed_data)
+  t_table_finish = time.perf_counter()
+  print(f'Output table finished in {t_table_finish-t_table_start} second(s)')
+
   # print the resulting dataset as a dataframe for readability
-  print(pd.DataFrame(forecast_weather(cities, api_key)))
+  print(pd.DataFrame(output_table))
   t2 = time.perf_counter()
-  print(f'Finished in {t2-t1} seconds')
+  print(f'Script finished in {t2-t1} second(s)')
 else:
   """
   uncomment the following assignments and return statement to run this script as a Tabpy function.
