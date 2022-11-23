@@ -188,9 +188,16 @@ if __name__ == '__main__':
 
   # print the resulting dataset as a dataframe for readability
   print(pd.DataFrame(output_table))
+
+  # calculate script and individual operation performance
   t_script_finish = time.perf_counter()
   t_script = t_script_finish-t_script_start
+  read_ratio = f'Read:{t_read/t_script:.2%}'
+  rest_ratio = f'Rest:{t_rest/t_script:.2%}'
+  process_ratio = f'Process:{t_process/t_script:.2%}'
+  table_ratio = f'Table Output:{t_table/t_script:.2%}'
   print(f'Script finished in {t_script} second(s)')
+  print(f'Composition --> [ {read_ratio} | {rest_ratio} | {process_ratio} | {table_ratio} ]')
 else:
   """
   uncomment the following assignments and return statement to run this script as a Tabpy function.
