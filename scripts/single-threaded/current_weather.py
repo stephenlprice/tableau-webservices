@@ -28,41 +28,33 @@ load_dotenv(".env")
 # calling environ is expensive, this saves environment variables to a dictionary
 env_dict = dict(os.environ)
 
+env_api_key = env_dict["API_KEY"]
+
 """
 -------------------------------------------------------------------------------------
 Table Extension script starts here
 -------------------------------------------------------------------------------------
 """
 # imports used by the Tabpy Function
+import requests
 import pandas as pd
-from concurrent.futures import ThreadPoolExecutor
-from requests_futures.sessions import FuturesSession
 
 def current_weather(cities, api_key):
-
   # gets current weather data for the specified geolocation
   def rest_current(api_key, cities):
-    # a dict of current weather data per city
+    # a list of current weather data per city
     city_data = {}
-
-    # session object with python 3.2's concurrent.futures allowing for async requests
-    session = FuturesSession(executor=ThreadPoolExecutor(max_workers=6))
-
+    # iterate through the cities dict
     for city in cities:
+      # assign coordinate
       name = city["city"]
       lon = city["lon"]
       lat = city["lat"]
-      query_parameters = f'lat={lat}&lon={lon}&appid={api_key}&units=imperial'
-      url = f'https://api.openweathermap.org/data/2.5/weather?{query_parameters}'
-
-      # futures are run in the background and are non-blocking
-      future = session.get(url)
-      # catching the returned future, .result() returns the response
-      result = future.result()
-      # response is serialized into json and inserted into the dict
-      payload = result.json()
+      parameters = f'lat={lat}&lon={lon}&appid={api_key}&units=imperial'
+      url = f'https://api.openweathermap.org/data/2.5/weather?{parameters}'
+      response = requests.get(url)
+      payload = response.json()
       city_data[name] = payload
-
     return city_data
 
   # creates a dataframe from the JSON payload with current weather
@@ -166,3 +158,4 @@ else:
   # #converts the dataframe to a dict with records orient
   #cities = cities_df.to_dict('records')
   #return current_weather(cities,api_key)
+
