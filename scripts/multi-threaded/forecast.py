@@ -45,38 +45,35 @@ def get_data(cities, api_key):
   # session object for HTTP persistent connections (https://requests.readthedocs.io/en/latest/user/advanced/#session-objects)
   session = requests.Session()
   # sends a request per city
-  def request_data(cities, api_key):
-    for city in cities:
-      lon = city["lon"]
-      lat = city["lat"]
-      query_parameters = f'lat={lat}&lon={lon}&appid={api_key}&units=imperial'
-      url = f'https://api.openweathermap.org/data/2.5/forecast?{query_parameters}'
-      
-      nonlocal session
-      req = session.get(url)
-      # response is serialized into json
-      payload = req.json()
-      # payload contains 8, 3hr forecast for 5 days (40 individual forecasts per city)
-      return payload
+  def request_data(city, api_key):
+    lon = city["lon"]
+    lat = city["lat"]
+    query_parameters = f'lat={lat}&lon={lon}&appid={api_key}&units=imperial'
+    url = f'https://api.openweathermap.org/data/2.5/forecast?{query_parameters}'
+    
+    nonlocal session
+    req = session.get(url)
+    # response is serialized into json
+    payload = req.json()
+    # payload contains 8, 3hr forecast for 5 days (40 individual forecasts per city)
+    return payload
   
   # use a pool of threads to execute async calls (https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor)
   with concurrent.futures.ThreadPoolExecutor() as executor:
-    # list comprehension runs request_data() for each iterable
-    results = [executor.submit(request_data, cities, api_key) for _ in cities]
-    # futures are run in the background and are non-blocking
+    # list comprehension loops through every city to request API data with thread pools
+    results = [executor.submit(request_data, city, api_key) for city in cities]
+  try:
+    # catching the returned future (non-blocking threads)
     for future in concurrent.futures.as_completed(results):
-      try:
-        # catching the returned future
-        result = future.result()
-      except Exception as exc:
-        print('%r Data request failed: %s' % (results[future], exc))
-      else:
-        for city in cities:
-          # add the json response as a value for each city name key
-          name = city["city"]
-          forecasts[name] = result
-  # returns the dict with city name as key and json payload with 40 forecasts as value   
-  return forecasts
+      result = future.result()
+      # add the json response as a value for each city name key
+      name = result["city"]["name"]
+      forecasts[name] = result
+  except Exception as exc:
+    print(f'Data request failed: {exc}')
+  else:
+    # returns the dict with city name as key and json payload with 40 forecasts as value   
+    return forecasts
 
 # creates dataframes from each 3hr forecast and appends them to a single dataframe
 def process(forecasts):
@@ -173,8 +170,9 @@ if __name__ == '__main__':
   # time module measures performance of each operation and the entire script
   t_script_start = time.perf_counter()
   api_key = env_dict["API_KEY"]
-  t_read_start = time.perf_counter()
+
   # reads the .csv files containing a list of cities
+  t_read_start = time.perf_counter()
   cities_df = pd.read_csv('cities2.csv', header=[0])
   # converts the dataframe to a dict with records orient
   cities = cities_df.to_dict('records')
@@ -182,28 +180,32 @@ if __name__ == '__main__':
   t_read = t_read_finish-t_read_start
   print(f'File read finished in {t_read} second(s)')
   
-  t_rest_start = time.perf_counter()
   # request data from OpenWeather API
+  t_rest_start = time.perf_counter()
   forecasts = get_data(cities, api_key)
   t_rest_finish = time.perf_counter()
   t_rest = t_rest_finish-t_rest_start
   print(f'REST API calls finished in {t_rest} second(s)')
 
-  t_process_start = time.perf_counter()
   # create a single dataframe containing all forecasts
+  t_process_start = time.perf_counter()
   processed_data = process(forecasts)
   t_process_finish = time.perf_counter()
   t_process = t_process_finish-t_process_start
   print(f'Data processing finished in {t_process} second(s)')
 
-  t_table_start = time.perf_counter()
   # formats the dataframe into a dict for Tableau
+  t_table_start = time.perf_counter()
   output_table = make_table(processed_data)
   t_table_finish = time.perf_counter()
   t_table = t_table_finish-t_table_start
   print(f'Output table finished in {t_table} second(s)')
 
   # print the resulting dataset as a dataframe for readability
+  print("""
+    -------------------------------------------------------------------------------------
+    ***********                       WEATHER FORECASTS                       ***********
+  """)
   print(pd.DataFrame(output_table))
 
   # calculate script and individual operation performance
