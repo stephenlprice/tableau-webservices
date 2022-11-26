@@ -145,7 +145,7 @@ def forecast_weather(cities, api_key):
 if __name__ == '__main__':
   api_key = env_dict["API_KEY"]
   # reads the .csv files containing a list of cities
-  cities_df = pd.read_csv('cities.csv', header=[0])
+  cities_df = pd.read_csv('cities2.csv', header=[0])
   # converts the dataframe to a dict with records orient
   cities = cities_df.to_dict('records')
   # print the resulting dataset as a dataframe for readability
