@@ -38,7 +38,7 @@ import pandas as pd
 import concurrent.futures
 import requests
 
-# gets weather forecast data for the specified geolocations
+# gets weather data for the specified geolocations
 def get_data(cities, api_key):
   # a dict to store weather forecast data for each city
   forecasts = {}
@@ -70,7 +70,7 @@ def get_data(cities, api_key):
       name = result["city"]["name"]
       forecasts[name] = result
   except Exception as exc:
-    print(f'Data request failed: {exc}')
+    print(f'Thread failed at: {exc}')
   else:
     # returns the dict with city name as key and json payload with 40 forecasts as value   
     return forecasts
@@ -199,6 +199,7 @@ if __name__ == '__main__':
 
   # formats the dataframe into a dict for Tableau
   output_dict = run_perf(make_table, processed_dict["result"], operation='Output table')
+  # formats the Tableau dict into a dataframe to print results to the console
   output = pd.DataFrame(output_dict["result"])
 
   # print the resulting dataset as a dataframe for readability
@@ -221,9 +222,16 @@ else:
   """
   uncomment the following assignments and return statement to run this script as a Tabpy function.
   """
-  #api_key = "API_KEY"
-  # #creates a dataframe of cities from the input table (.csv file)
-  #cities_df = pd.DataFrame(_arg1)
-  # #converts the dataframe to a dict with records orient
-  #cities = cities_df.to_dict('records')
-  #return forecast_weather(cities)
+  # api_key = "API_KEY"
+  # # creates a dataframe of cities from the input table (.csv file)
+  # cities_df = pd.DataFrame(_arg1)
+  # # converts the dataframe to a dict with records orient
+  # cities = cities_df.to_dict('records')
+  # # request data from OpenWeather API
+  # forecasts = get_data(cities, api_key)
+  # # create a single dataframe containing all forecasts
+  # processed_data = process(forecasts)
+  # # formats the dataframe into a dict for Tableau
+  # output_dict = make_table(processed_data)
+  # # return statement for the Table Extensions Function
+  # return output_dict
