@@ -202,7 +202,7 @@ if __name__ == '__main__':
   # print the resulting dataset as a dataframe for readability
   print("""
     -------------------------------------------------------------------------------------
-    **************                    WEATHER FORECASTS                    **************
+    **************                     CURRENT WEATHER                     **************
   """)
   print(output)
 
