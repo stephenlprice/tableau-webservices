@@ -185,7 +185,7 @@ if __name__ == '__main__':
     return {"result": result, "performance": performance}
 
   # time module measures performance of each operation and the entire script
-  t_script_start = time.perf_counter()
+  script_start = time.perf_counter()
   
   # reads the .csv files containing a list of cities
   cities_dict = run_perf(pd.read_csv, 'cities2.csv', header=[0], operation='File read')
@@ -199,17 +199,18 @@ if __name__ == '__main__':
 
   # formats the dataframe into a dict for Tableau
   output_dict = run_perf(make_table, processed_dict["result"], operation='Output table')
+  output = pd.DataFrame(output_dict["result"])
 
   # print the resulting dataset as a dataframe for readability
   print("""
     -------------------------------------------------------------------------------------
-    ***********                       WEATHER FORECASTS                       ***********
+    **************                    WEATHER FORECASTS                    **************
   """)
-  print(pd.DataFrame(output_dict["result"]))
+  print(output)
 
   # calculate script and individual operation performance
-  t_script_finish = time.perf_counter()
-  t_script = t_script_finish-t_script_start
+  script_finish = time.perf_counter()
+  t_script = script_finish - script_start
   read_ratio = f'Read:{cities_dict["performance"]/t_script:.2%}'
   rest_ratio = f'Rest:{forecasts_dict["performance"]/t_script:.2%}'
   process_ratio = f'Process:{processed_dict["performance"]/t_script:.2%}'
