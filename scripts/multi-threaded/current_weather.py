@@ -209,10 +209,10 @@ if __name__ == '__main__':
   # calculate script and individual operation performance
   script_finish = time.perf_counter()
   t_script = script_finish - script_start
-  read_ratio = f'Read:{cities_dict["performance"]/t_script:.2%}'
-  rest_ratio = f'Rest:{current_dict["performance"]/t_script:.2%}'
-  process_ratio = f'Process:{processed_dict["performance"]/t_script:.2%}'
-  table_ratio = f'Table Output:{output_dict["performance"]/t_script:.2%}'
+  read_ratio = f'Read:{cities_dict["performance"]/t_script:.2%} ({cities_dict["performance"]:.2f}s)'
+  rest_ratio = f'Rest:{current_dict["performance"]/t_script:.2%} ({current_dict["performance"]:.2f}s)'
+  process_ratio = f'Process:{processed_dict["performance"]/t_script:.2%} ({processed_dict["performance"]:.2f}s)'
+  table_ratio = f'Table Output:{output_dict["performance"]/t_script:.2%} ({output_dict["performance"]:.2f}s)'
   print(f'Script finished in {t_script} second(s)')
   print(f'Composition --> [ {read_ratio} | {rest_ratio} | {process_ratio} | {table_ratio} ]')
 else:
