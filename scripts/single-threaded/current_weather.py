@@ -54,8 +54,6 @@ def get_data(cities, api_key):
     req = session.get(url)
     # response is serialized into json
     payload = req.json()
-    # add the json response as a value for each city name key
-    weather_data[name] = payload
     # payload contains current weather for each city
     return payload
   
