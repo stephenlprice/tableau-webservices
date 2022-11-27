@@ -38,7 +38,7 @@ import pandas as pd
 import concurrent.futures
 import requests
 
-# gets weather forecast data for the specified geolocations
+# gets weather data for the specified geolocations
 def get_data(cities, api_key):
   # a dict to store weather forecast data for each city
   forecasts = {}
@@ -70,7 +70,7 @@ def get_data(cities, api_key):
       name = result["city"]["name"]
       forecasts[name] = result
   except Exception as exc:
-    print(f'Data request failed: {exc}')
+    print(f'Thread failed at: {exc}')
   else:
     # returns the dict with city name as key and json payload with 40 forecasts as value   
     return forecasts
@@ -188,7 +188,7 @@ if __name__ == '__main__':
   script_start = time.perf_counter()
   
   # reads the .csv files containing a list of cities
-  cities_dict = run_perf(pd.read_csv, 'cities2.csv', header=[0], operation='File read')
+  cities_dict = run_perf(pd.read_csv, 'data/testing.csv', header=[0], operation='File read')
   cities = cities_dict["result"].to_dict('records')
 
   # request data from OpenWeather API
@@ -199,6 +199,7 @@ if __name__ == '__main__':
 
   # formats the dataframe into a dict for Tableau
   output_dict = run_perf(make_table, processed_dict["result"], operation='Output table')
+  # formats the Tableau dict into a dataframe to print results to the console
   output = pd.DataFrame(output_dict["result"])
 
   # print the resulting dataset as a dataframe for readability
@@ -211,19 +212,26 @@ if __name__ == '__main__':
   # calculate script and individual operation performance
   script_finish = time.perf_counter()
   t_script = script_finish - script_start
-  read_ratio = f'Read:{cities_dict["performance"]/t_script:.2%}'
-  rest_ratio = f'Rest:{forecasts_dict["performance"]/t_script:.2%}'
-  process_ratio = f'Process:{processed_dict["performance"]/t_script:.2%}'
-  table_ratio = f'Table Output:{output_dict["performance"]/t_script:.2%}'
+  read_ratio = f'Read:{cities_dict["performance"]/t_script:.2%} ({cities_dict["performance"]:.2f}s)'
+  rest_ratio = f'Rest:{forecasts_dict["performance"]/t_script:.2%} ({forecasts_dict["performance"]:.2f}s)'
+  process_ratio = f'Process:{processed_dict["performance"]/t_script:.2%} ({processed_dict["performance"]:.2f}s)'
+  table_ratio = f'Table Output:{output_dict["performance"]/t_script:.2%} ({output_dict["performance"]:.2f}s)'
   print(f'Script finished in {t_script} second(s)')
   print(f'Composition --> [ {read_ratio} | {rest_ratio} | {process_ratio} | {table_ratio} ]')
 else:
   """
   uncomment the following assignments and return statement to run this script as a Tabpy function.
   """
-  #api_key = "API_KEY"
-  # #creates a dataframe of cities from the input table (.csv file)
-  #cities_df = pd.DataFrame(_arg1)
-  # #converts the dataframe to a dict with records orient
-  #cities = cities_df.to_dict('records')
-  #return forecast_weather(cities)
+  # api_key = "API_KEY"
+  # # creates a dataframe of cities from the input table (.csv file)
+  # cities_df = pd.DataFrame(_arg1)
+  # # converts the dataframe to a dict with records orient
+  # cities = cities_df.to_dict('records')
+  # # request data from OpenWeather API
+  # forecasts = get_data(cities, api_key)
+  # # create a single dataframe containing all forecasts
+  # processed_data = process(forecasts)
+  # # formats the dataframe into a dict for Tableau
+  # output_dict = make_table(processed_data)
+  # # return statement for the Table Extensions Function
+  # return output_dict
