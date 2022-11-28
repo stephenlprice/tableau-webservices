@@ -180,7 +180,7 @@ if __name__ == '__main__':
   script_start = time.perf_counter()
   
   # reads the .csv files containing a list of cities
-  cities_dict = run_perf(pd.read_csv, 'data/testing.csv', header=[0], operation='File read')
+  cities_dict = run_perf(pd.read_csv, 'data/cities_40.csv', header=[0], operation='File read')
   cities = cities_dict["result"].to_dict('records')
 
   # request data from OpenWeather API
