@@ -35,9 +35,9 @@ Table Extension script starts here
 """
 # imports used by the Tabpy Function
 import traceback
-import pandas as pd
 import concurrent.futures
 import requests
+import pandas as pd
 
 # gets weather data for the specified geolocations
 def get_data(cities, api_key):
