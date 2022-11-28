@@ -34,6 +34,7 @@ Table Extension script starts here
 -------------------------------------------------------------------------------------
 """
 # imports used by the Tabpy Function
+import traceback
 import pandas as pd
 import concurrent.futures
 import requests
@@ -69,8 +70,9 @@ def get_data(cities, api_key):
       # add the json response as a value for each city name key
       name = result["city"]["name"]
       forecasts[name] = result
-  except Exception as exc:
-    print(f'Thread failed at: {exc}')
+  except:
+    print(f'ERROR: Thread failed at:')
+    traceback.print_exc()
   else:
     # returns the dict with city name as key and json payload with 40 forecasts as value   
     return forecasts
