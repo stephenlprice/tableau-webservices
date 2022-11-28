@@ -19,7 +19,7 @@ add it as an environment variable on the Tabpy Server.
 -------------------------------------------------------------------------------------
 """
 # imports used for local development
-import os
+import os, time
 from dotenv import load_dotenv
 
 # load environment files from .env
@@ -34,7 +34,7 @@ Table Extension script starts here
 -------------------------------------------------------------------------------------
 """
 # imports used by the Tabpy Function
-import traceback, time
+import traceback
 import concurrent.futures
 import requests
 import pandas as pd
