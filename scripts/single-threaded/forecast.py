@@ -34,8 +34,9 @@ Table Extension script starts here
 -------------------------------------------------------------------------------------
 """
 # imports used by the Tabpy Function
-import pandas as pd
+import traceback
 import requests
+import pandas as pd
 
 # gets weather data for the specified geolocations
 def get_data(cities, api_key):
@@ -62,8 +63,9 @@ def get_data(cities, api_key):
     try:
       name = city["city"]
       payload = request_data(city, api_key)
-    except Exception as exc:
-      print(f'Data request failed at: {exc}')
+    except:
+      print(f'ERROR: Data request failed at:')
+      traceback.print_exc()
     else:
       # assign the API response body to a dict where each key is the city name
       forecasts[name] = payload
