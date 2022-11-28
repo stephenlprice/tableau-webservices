@@ -39,7 +39,6 @@ import concurrent.futures
 import requests
 import pandas as pd
 
-
 # gets weather data for the specified geolocations
 def get_data(cities, api_key):
   # a dict of current weather data per city
