@@ -169,30 +169,30 @@ def make_table(processed_data):
   return processed_data
 
 
-# stores performance recording to output at script end
-perf_dict = {}
-# decorator used to run script operations and measure performance
-def run_perf(func, *args, **kwargs):
-  # obtain the operation string used to print the message and remove it from kwargs
-  operation = kwargs["operation"]
-  del kwargs["operation"]
-  # start measuring operation performance
-  start = time.perf_counter()
-  # run the provided function
-  result = func(*args, **kwargs)
-  # stop measuring operation performance
-  finish = time.perf_counter()
-  # calculate operation performance
-  performance = finish - start
-  # add performance recording to perf_dict
-  perf_dict[operation] = performance
-  print(f'{operation} finished in {performance} second(s)')
-  return result
-  
-
 # protects the entry point of the script so that this only runs during local development
 if __name__ == '__main__':
   api_key = env_dict["API_KEY"]
+
+  # stores performance recording to output at script end
+  perf_dict = {}
+  # decorator used to run script operations and measure performance
+  def run_perf(func, *args, **kwargs):
+    # obtain the operation string used to print the message and remove it from kwargs
+    operation = kwargs["operation"]
+    del kwargs["operation"]
+    # start measuring operation performance
+    start = time.perf_counter()
+    # run the provided function
+    result = func(*args, **kwargs)
+    # stop measuring operation performance
+    finish = time.perf_counter()
+    # calculate operation performance
+    performance = finish - start
+    # add performance recording to perf_dict
+    perf_dict[operation] = performance
+    print(f'{operation} finished in {performance} second(s)')
+    return result
+
   # spawns processes to run multi-threaded REST calls and data processesing in parallel
   def process_pooler(weather_dict):
     # dataframe to append chunked dataframes from each process future
@@ -212,8 +212,7 @@ if __name__ == '__main__':
       else:
         return processed_df
   
-
-  # time module measures performance of each operation and the entire script
+  # measures performance of each operation and the entire script
   script_start = time.perf_counter()
   # reads the .csv files containing a list of cities
   cities_dict = run_perf(pd.read_csv, 'data/cities_40.csv', header=[0], operation='File read')
@@ -236,7 +235,6 @@ if __name__ == '__main__':
   process_pool_ratio = f'Process Pool:{perf_dict["Process pool"]/t_script:.2%} ({perf_dict["Process pool"]:.2f}s)'
   print(f'Script finished in {t_script} second(s)')
   print(f'Composition --> [ {read_ratio} | {rest_ratio} | {process_pool_ratio} ]')
-  
 else:
   """
   uncomment the following assignments and return statement to run this script as a Tabpy function.
