@@ -81,29 +81,30 @@ def get_data(cities, api_key):
 # creates dataframes from each city and appends them to a single dataframe
 def process(cities):
   weather_df = pd.DataFrame()
+  
   # append data to a dataframe as the process() iterates through each city
   def append_rows(city_row):
     nonlocal weather_df
     # append data to weather_df as we iterate through each city
     weather_df = pd.concat([weather_df, city_row], ignore_index=True)
 
-  # each row will have a unique index
-  index = 0
-  for city in cities:
-    index = index + 1
+  # creates a row from each city
+  def create_row(city):
+    # each row will have a unique index
+    index = city["id"]
     # coordinates
-    coord = cities[city]["coord"]
+    coord = city["coord"]
     coord["ID"] = index
     coord = pd.DataFrame.from_dict([coord])
 
     # weather results
-    weather = cities[city]["weather"][0]
+    weather = city["weather"][0]
     del weather["id"]
     weather["ID"] = index
     weather = pd.DataFrame.from_dict([weather])
 
     # main weather data
-    main = cities[city]["main"]
+    main = city["main"]
     if "sea_level" in main:
       del main["sea_level"]
     if "grnd_level" in main:
@@ -113,33 +114,33 @@ def process(cities):
 
     # visibility 
     visibility = {}
-    visibility["visibility"] = cities[city]["visibility"]
+    visibility["visibility"] = city["visibility"]
     visibility["ID"] = index
     visibility = pd.DataFrame.from_dict([visibility])
 
     # wind
     wind = {}
-    wind["wind speed"] = cities[city]["wind"]["speed"]
-    wind["wind deg"] = cities[city]["wind"]["deg"]
+    wind["wind speed"] = city["wind"]["speed"]
+    wind["wind deg"] = city["wind"]["deg"]
     wind["ID"] = index
     wind = pd.DataFrame.from_dict([wind])
 
     # clouds
     clouds = {}
-    clouds["clouds"] = cities[city]["clouds"]["all"]
+    clouds["clouds"] = city["clouds"]["all"]
     clouds["ID"] = index
     clouds = pd.DataFrame.from_dict([clouds])
 
     # country
     country = {}
-    country["country"] = cities[city]["sys"]["country"]
+    country["country"] = city["sys"]["country"]
     country["ID"] = index
     country = pd.DataFrame.from_dict([country])
 
     # name (city)
     name = {}
-    name["name"] = cities[city]["name"]
-    name["city_id"]= cities[city]["id"]
+    name["name"] = city["name"]
+    name["city_id"]= city["id"]
     name["ID"] = index
     name = pd.DataFrame.from_dict([name])
 
@@ -151,10 +152,12 @@ def process(cities):
     city_row = pd.merge(city_row, clouds, left_on='ID', right_on='ID', sort=False)
     city_row = pd.merge(city_row, country, left_on='ID', right_on='ID', sort=False)
     city_row = pd.merge(city_row, name, left_on='ID', right_on='ID', sort=False)
-    
+      
     # appends each row to a single dataframe (forecast_df)
     append_rows(city_row)
-
+  
+  # dict comprehension creates rows for each city
+  {create_row(cities[city]) for city in cities}
   return weather_df
 
 
@@ -166,83 +169,72 @@ def make_table(processed_data):
   return processed_data
 
 
-# stores performance recording to output at script end
-perf_dict = {}
-# decorator used to run script operations and measure performance
-def run_perf(func, *args, **kwargs):
-  # obtain the operation string used to print the message and remove it from kwargs
-  operation = kwargs["operation"]
-  del kwargs["operation"]
-  # start measuring operation performance
-  start = time.perf_counter()
-  # run the provided function
-  result = func(*args, **kwargs)
-  # stop measuring operation performance
-  finish = time.perf_counter()
-  # calculate operation performance
-  performance = finish - start
-  # add performance recording to perf_dict
-  perf_dict[operation] = performance
-  print(f'{operation} finished in {performance} second(s)')
-  return result
-
-# moved REST calls and processing to top level so it can be "pickleable" by process pools
-def run_process(cities, api_key):
-  # request data from OpenWeather API
-  weather_dict = get_data(cities, api_key)
-  # create a single dataframe containing all city data
-  processed_df = process(weather_dict)
-  # consolidated dataframe containing all data
-  return processed_df
-
 # protects the entry point of the script so that this only runs during local development
 if __name__ == '__main__':
   api_key = env_dict["API_KEY"]
+
+  # stores performance recording to output at script end
+  perf_dict = {}
+  # decorator used to run script operations and measure performance
+  def run_perf(func, *args, **kwargs):
+    # obtain the operation string used to print the message and remove it from kwargs
+    operation = kwargs["operation"]
+    del kwargs["operation"]
+    # start measuring operation performance
+    start = time.perf_counter()
+    # run the provided function
+    result = func(*args, **kwargs)
+    # stop measuring operation performance
+    finish = time.perf_counter()
+    # calculate operation performance
+    performance = finish - start
+    # add performance recording to perf_dict
+    perf_dict[operation] = performance
+    print(f'{operation} finished in {performance} second(s)')
+    return result
+
   # spawns processes to run multi-threaded REST calls and data processesing in parallel
-  def process_pooler(cities, api_key):
+  def process_pooler(weather_dict):
     # dataframe to append chunked dataframes from each process future
-    final_df = pd.DataFrame()
+    processed_df = pd.DataFrame()
     with concurrent.futures.ProcessPoolExecutor() as executor:
       # list comprehension loops through every city to create chunks for each process
-      results = [executor.submit(run_process, [cities_chunk], api_key) for cities_chunk in cities] 
+      results = {executor.submit(process, {cities_chunk: weather_dict[cities_chunk]}) for cities_chunk in weather_dict} 
       try:
         # results contains a list of futures that needs to be iterated through
         for future in concurrent.futures.as_completed(results):
           processed_data = future.result()
           # append to final_df as we iterate through dataframes generated by each process
-          final_df = pd.concat([final_df, processed_data], ignore_index=True)
+          processed_df = pd.concat([processed_df, processed_data], ignore_index=True)
       except:
         print(f'ERROR: Process failed at:')
         traceback.print_exc()
       else:
-        # formats the dataframe into a dict for Tableau
-        output_dict = run_perf(make_table, final_df, operation='Output table')
-        return output_dict
+        return processed_df
   
-
-  # time module measures performance of each operation and the entire script
+  # measures performance of each operation and the entire script
   script_start = time.perf_counter()
   # reads the .csv files containing a list of cities
   cities_dict = run_perf(pd.read_csv, 'data/cities_40.csv', header=[0], operation='File read')
   cities = cities_dict.to_dict('records')
-  # starts a process pooler to run REST calls and processing in parallel
-  output_dict = run_perf(process_pooler, cities, api_key, operation='Process pool')
-  output_df = pd.DataFrame(output_dict)
+  # request data from OpenWeather API
+  weather_dict = run_perf(get_data, cities, api_key, operation='REST API calls')
+  # starts a process pooler to run processing in parallel
+  processed_df = run_perf(process_pooler, weather_dict, operation='Process pool')
   # print the resulting dataset as a dataframe for readability
   print("""
     -------------------------------------------------------------------------------------
     **************                     CURRENT WEATHER                     **************
   """)
-  print(output_df)
+  print(processed_df)
   # calculate script and individual operation performance
   script_finish = time.perf_counter()
   t_script = script_finish - script_start
   read_ratio = f'Read:{perf_dict["File read"]/t_script:.2%} ({perf_dict["File read"]:.2f}s)'
+  rest_ratio = f'Read:{perf_dict["REST API calls"]/t_script:.2%} ({perf_dict["REST API calls"]:.2f}s)'
   process_pool_ratio = f'Process Pool:{perf_dict["Process pool"]/t_script:.2%} ({perf_dict["Process pool"]:.2f}s)'
-  table_ratio = f'Table Output:{perf_dict["Output table"]/t_script:.2%} ({perf_dict["Output table"]:.2f}s)'
   print(f'Script finished in {t_script} second(s)')
-  print(f'Composition --> [ {read_ratio} | {process_pool_ratio} | {table_ratio} ]')
-  
+  print(f'Composition --> [ {read_ratio} | {rest_ratio} | {process_pool_ratio} ]')
 else:
   """
   uncomment the following assignments and return statement to run this script as a Tabpy function.
@@ -253,10 +245,10 @@ else:
   # # converts the dataframe to a dict with records orient
   # cities = cities_df.to_dict('records')
   # # request data from OpenWeather API
-  # forecasts = get_data(cities, api_key)
+  # weather_dict = get_data(cities, api_key)
   # # create a single dataframe containing all city data
-  # processed_data = process(forecasts)
+  # processed_df = process(weather_dict)
   # # formats the dataframe into a dict for Tableau
-  # output_dict = make_table(processed_data)
+  # output_dict = make_table(processed_df)
   # # return statement for the Table Extensions Function
   # return output_dict
