@@ -188,13 +188,7 @@ def run_perf(func, *args, **kwargs):
   perf_dict[operation] = performance
   print(f'{operation} finished in {performance} second(s)')
   return result
-
-# moved REST calls and processing to top level so it can be "pickleable" by process pools
-def run_process(weather_dict):
-  # create a single dataframe containing all city data
-  processed_df = process(weather_dict)
-  # consolidated dataframe containing all data
-  return processed_df
+  
 
 # protects the entry point of the script so that this only runs during local development
 if __name__ == '__main__':
@@ -205,7 +199,7 @@ if __name__ == '__main__':
     processed_df = pd.DataFrame()
     with concurrent.futures.ProcessPoolExecutor() as executor:
       # list comprehension loops through every city to create chunks for each process
-      results = {executor.submit(run_process, {cities_chunk: weather_dict[cities_chunk]}) for cities_chunk in weather_dict} 
+      results = {executor.submit(process, {cities_chunk: weather_dict[cities_chunk]}) for cities_chunk in weather_dict} 
       try:
         # results contains a list of futures that needs to be iterated through
         for future in concurrent.futures.as_completed(results):
