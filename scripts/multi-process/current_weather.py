@@ -211,7 +211,20 @@ if __name__ == '__main__':
         traceback.print_exc()
       else:
         return processed_df
-  
+
+  # prints performance recordings to compare techniques
+  def print_perf(perf_dict, t_script):
+    # dict comprehension to store message strings for each operation
+    ratios = {f'{operation}': f'{operation}:{perf_dict[operation]/t_script:.2%} ({perf_dict[operation]:.2f}s)' for operation in perf_dict}
+    print("""
+      -------------------------------------------------------------------------------------
+      **************                       PERFORMANCE                       **************
+    """)
+    print(f'Script finished in {t_script} second(s)')
+    # prints the percentage that operation contributed to total script runtime
+    print(f'Composition --> [ {ratios["File read"]} | {ratios["REST API calls"]} | {ratios["Process pool"]} ]')
+
+
   # measures performance of each operation and the entire script
   script_start = time.perf_counter()
   # reads the .csv files containing a list of cities
@@ -230,11 +243,8 @@ if __name__ == '__main__':
   # calculate script and individual operation performance
   script_finish = time.perf_counter()
   t_script = script_finish - script_start
-  read_ratio = f'Read:{perf_dict["File read"]/t_script:.2%} ({perf_dict["File read"]:.2f}s)'
-  rest_ratio = f'Read:{perf_dict["REST API calls"]/t_script:.2%} ({perf_dict["REST API calls"]:.2f}s)'
-  process_pool_ratio = f'Process Pool:{perf_dict["Process pool"]/t_script:.2%} ({perf_dict["Process pool"]:.2f}s)'
-  print(f'Script finished in {t_script} second(s)')
-  print(f'Composition --> [ {read_ratio} | {rest_ratio} | {process_pool_ratio} ]')
+  # print performance results
+  print_perf(perf_dict, t_script)
 else:
   """
   uncomment the following assignments and return statement to run this script as a Tabpy function.
