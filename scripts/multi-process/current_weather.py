@@ -18,7 +18,6 @@ development. This avoids pushing your key to public repositories such as Github.
 When deployed to a Table Extension you can hardcode the API key in the script.
 -------------------------------------------------------------------------------------
 """
-
 # imports used by the Tabpy Function
 import traceback
 import concurrent.futures
@@ -210,13 +209,18 @@ if __name__ == '__main__':
   def print_perf(perf_dict, t_script):
     # dict comprehension to store message strings for each operation
     ratios = {f'{operation}': f'{operation}:{perf_dict[operation]/t_script:.2%} ({perf_dict[operation]:.2f}s)' for operation in perf_dict}
+    message = 'Composition --> ['
+    for ratio in ratios:
+      message += f' {ratios[ratio]} |'
+    message = message[:-1] + ']'
+    # message = {f'{ratios[ratio]}' for ratio in ratios}
     print("""
       -------------------------------------------------------------------------------------
       **************                       PERFORMANCE                       **************
     """)
     print(f'Script finished in {t_script} second(s)')
     # prints the percentage that operation contributed to total script runtime
-    print(f'Composition --> [ {ratios["File read"]} | {ratios["REST API calls"]} | {ratios["Process pool"]} ]')
+    print(message)
 
 
   # measures performance of each operation and the entire script
