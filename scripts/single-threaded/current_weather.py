@@ -18,21 +18,6 @@ development. This avoids pushing your key to public repositories such as Github.
 When deployed to a Table Extension you can hardcode the API key in the script.
 -------------------------------------------------------------------------------------
 """
-# imports used for local development
-import os, time
-from dotenv import load_dotenv
-
-# load environment files from .env
-load_dotenv(".env")
-# calling environ is expensive, this saves environment variables to a dictionary
-env_dict = dict(os.environ)
-
-
-"""
--------------------------------------------------------------------------------------
-Table Extension script starts here
--------------------------------------------------------------------------------------
-"""
 # imports used by the Tabpy Function
 import traceback
 import requests
@@ -161,39 +146,69 @@ def make_table(processed_data):
 
 # protects the entry point of the script so that this only runs during local development
 if __name__ == '__main__':
+  # imports used for local development
+  import os, time
+  from dotenv import load_dotenv
+
+  # load environment files from .env
+  load_dotenv(".env")
+  # calling environ is expensive, this saves environment variables to a dictionary
+  env_dict = dict(os.environ)
   api_key = env_dict["API_KEY"]
+
   # decorator used to run script operations and measure performance
   def run_perf(func, *args, **kwargs):
-    # start measuring operation performance
-    start = time.perf_counter()
     # obtain the operation string used to print the message and remove it from kwargs
     operation = kwargs["operation"]
     del kwargs["operation"]
+    # start measuring operation performance
+    start = time.perf_counter()
     # run the provided function
     result = func(*args, **kwargs)
     # stop measuring operation performance
     finish = time.perf_counter()
     # calculate operation performance
     performance = finish - start
+    # add performance recording to perf_dict
+    perf_dict[operation] = performance
     print(f'{operation} finished in {performance} second(s)')
-    return {"result": result, "performance": performance}
+    return result
 
+  # stores performance recording to output at script end
+  perf_dict = {}
+  # prints performance recordings to compare techniques
+  def print_perf(perf_dict, t_script):
+    # dict comprehension to store message strings for each operation
+    ratios = {f'{operation}': f'{operation}:{perf_dict[operation]/t_script:.2%} ({perf_dict[operation]:.2f}s)' for operation in perf_dict}
+    message = 'Composition --> ['
+    for ratio in ratios:
+      message += f' {ratios[ratio]} |'
+    message = message[:-1] + ']'
+    # message = {f'{ratios[ratio]}' for ratio in ratios}
+    print("""
+      -------------------------------------------------------------------------------------
+      **************                       PERFORMANCE                       **************
+    """)
+    print(f'Script finished in {t_script} second(s)')
+    # prints the percentage that operation contributed to total script runtime
+    print(message)
+  
   # time module measures performance of each operation and the entire script
   script_start = time.perf_counter()
   
   # reads the .csv files containing a list of cities
-  cities_dict = run_perf(pd.read_csv, 'data/cities_40.csv', header=[0], operation='File read')
-  cities = cities_dict["result"].to_dict('records')
+  cities_dict = run_perf(pd.read_csv, 'data/cities_5.csv', header=[0], operation='File read')
+  cities = cities_dict.to_dict('records')
 
   # request data from OpenWeather API
   current_dict = run_perf(get_data, cities, api_key, operation='REST API calls')
 
   # create a single dataframe containing all city data
-  processed_dict = run_perf(process, current_dict["result"], operation='Data processing')
+  processed_dict = run_perf(process, current_dict, operation='Data processing')
 
   # formats the dataframe into a dict for Tableau
-  output_dict = run_perf(make_table, processed_dict["result"], operation='Output table')
-  output = pd.DataFrame(output_dict["result"])
+  output_dict = run_perf(make_table, processed_dict, operation='Output table')
+  output = pd.DataFrame(output_dict)
 
   # print the resulting dataset as a dataframe for readability
   print("""
@@ -205,12 +220,8 @@ if __name__ == '__main__':
   # calculate script and individual operation performance
   script_finish = time.perf_counter()
   t_script = script_finish - script_start
-  read_ratio = f'Read:{cities_dict["performance"]/t_script:.2%} ({cities_dict["performance"]:.2f}s)'
-  rest_ratio = f'Rest:{current_dict["performance"]/t_script:.2%} ({current_dict["performance"]:.2f}s)'
-  process_ratio = f'Process:{processed_dict["performance"]/t_script:.2%} ({processed_dict["performance"]:.2f}s)'
-  table_ratio = f'Table Output:{output_dict["performance"]/t_script:.2%} ({output_dict["performance"]:.2f}s)'
-  print(f'Script finished in {t_script} second(s)')
-  print(f'Composition --> [ {read_ratio} | {rest_ratio} | {process_ratio} | {table_ratio} ]')
+  # print performance results
+  print_perf(perf_dict, t_script)
 else:
   """
   uncomment the following assignments and return statement to run this script as a Tabpy function.
