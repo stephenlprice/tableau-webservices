@@ -5,34 +5,20 @@
 Request current weather data from the OpenWeather API via Table Extensions.
 
 Table Extension scripts are essentially functions with a return statement. 
-However, in order to support local development the final script is wrapped 
-by certain imports and functions that can output results to a shell without
+However, in order to support local development the final script is protected 
+under (__name__ == '__main__') so it can output results to a shell without
 resulting in: (SyntaxError: 'return' outside function)
 
-To deploy this code via a Table Extension, only copy the code marked
-for usage in Tabpy and exclude any of the code used for local development.
+This entire file can be added to a Table Extensions script without modification
+since lines of code intended for local development will not be run when the script
+is imported into Tabpy as a function.
 
 To secure the necessary API key, use a .env file (see README.md) during local
 development. This avoids pushing your key to public repositories such as Github.
-When deployed to a Table Extension you can hardcode the API key in the script or
-add it as an environment variable on the Tabpy Server.
+When deployed to a Table Extension you can hardcode the API key in the script.
 -------------------------------------------------------------------------------------
 """
-# imports used for local development
-import os, time
-from dotenv import load_dotenv
 
-# load environment files from .env
-load_dotenv(".env")
-# calling environ is expensive, this saves environment variables to a dictionary
-env_dict = dict(os.environ)
-
-
-"""
--------------------------------------------------------------------------------------
-Table Extension script starts here
--------------------------------------------------------------------------------------
-"""
 # imports used by the Tabpy Function
 import traceback
 import concurrent.futures
@@ -171,6 +157,14 @@ def make_table(processed_data):
 
 # protects the entry point of the script so that this only runs during local development
 if __name__ == '__main__':
+  # imports used for local development
+  import os, time
+  from dotenv import load_dotenv
+
+  # load environment files from .env
+  load_dotenv(".env")
+  # calling environ is expensive, this saves environment variables to a dictionary
+  env_dict = dict(os.environ)
   api_key = env_dict["API_KEY"]
 
   # stores performance recording to output at script end
