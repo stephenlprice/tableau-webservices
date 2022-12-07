@@ -24,13 +24,7 @@ When deployed to a Table Extension you can hardcode the API key in the script.
 import os, time
 from dotenv import load_dotenv
 import pandas as pd
-from scripts import tabpy
-
-# load environment files from .env
-load_dotenv(".env")
-# calling environ is expensive, this saves environment variables to a dictionary
-env_dict = dict(os.environ)
-api_key = env_dict["API_KEY"]
+import tabpy
 
 class OpenWeather_Job:
   def __init__(self, multithreading, multiprocessing, input_data, api_key):
@@ -94,11 +88,7 @@ class OpenWeather_Job:
     # starts a process pooler to run processing in parallel
     processed_df = self.__run_perf(tabpy.process, self.multiprocessing, "current", weather_dict, operation='Process pool')
     # print the resulting dataset as a dataframe for readability
-    print("""
-      -------------------------------------------------------------------------------------
-      **************                     CURRENT WEATHER                     **************
-    """)
-    print(f'      //////////////    Multi-threading: {self.multithreading} | Multi-processing: {self.multiprocessing}    ///////////////\n')
+    print(f'\n      //////////////    Multi-threading: {self.multithreading} | Multi-processing: {self.multiprocessing}    ///////////////\n')
     print(processed_df, '\n')
     # calculate script and individual operation performance
     script_finish = time.perf_counter()
@@ -107,17 +97,24 @@ class OpenWeather_Job:
       
 # protects the entry point of the script so that this only runs during local development
 if __name__ == '__main__':
+  # load environment files from .env
+  load_dotenv(".env")
+  # calling environ is expensive, this saves environment variables to a dictionary
+  env_dict = dict(os.environ)
+  api_key = env_dict["API_KEY"]
   input_data = 'data/cities_5.csv'
   
-
   # Object constructor: OpenWeather_Job(multithreading, multiprocessing, input_data, api_key)
   singleThread_singleProcess = OpenWeather_Job(False, False, input_data, api_key)
-  singleThread_singleProcess.run_job()
-
   multiThread_singleProcess = OpenWeather_Job(True, False, input_data, api_key)
-  multiThread_singleProcess.run_job()
-
   multiThread_multiProcess = OpenWeather_Job(True, True, input_data, api_key)
+  
+  print("""
+    -------------------------------------------------------------------------------------
+    **************                     CURRENT WEATHER                     **************
+  """)
+  singleThread_singleProcess.run_job()
+  multiThread_singleProcess.run_job()
   multiThread_multiProcess.run_job()
 
   print("""
