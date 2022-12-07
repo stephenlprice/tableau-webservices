@@ -234,15 +234,14 @@ def process(multiprocess, data_type, data):
         return processed_df
 
   if multiprocess == False:
-    weather_df = {create_df(multiprocess, data_type, data[city]) for city in data}
-    # dict comprehension creates rows for each city
-    processed_df = pd.concat([processed_df, weather_df], ignore_index=True)
+    for city in data:
+      weather_df = create_df(multiprocess, data_type, data[city])
+      processed_df = pd.concat([processed_df, weather_df], ignore_index=True)
   elif multiprocess == True:
     # runs a process pool for the specified function
     process_pooler(create_df, multiprocess=multiprocess, data_type=data_type, task=data)
   else:
     raise Exception('ERROR: multiprocess must be True or False')
-
   return processed_df
 
 # output a dict of lists as required by Tableau
