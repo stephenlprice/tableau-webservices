@@ -55,7 +55,7 @@ if __name__ == '__main__':
   cities_dict = run_perf(pd.read_csv, 'data/cities_40.csv', header=[0], operation='File read')
   cities = cities_dict.to_dict('records')
   # request data from OpenWeather API
-  weather_dict = run_perf(tabpy.get_data, cities, api_key, operation='REST API calls')
+  weather_dict = run_perf(tabpy.get_data, cities, api_key, False, operation='REST API calls')
   # starts a process pooler to run processing in parallel
   processed_df = run_perf(tabpy.process, False, "current", weather_dict, operation='Process pool')
   # print the resulting dataset as a dataframe for readability
@@ -69,4 +69,3 @@ if __name__ == '__main__':
   t_script = script_finish - script_start
   # print performance results
   print_perf(perf_dict, t_script)
-  
