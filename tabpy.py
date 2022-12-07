@@ -2,7 +2,7 @@
 -------------------------------------------------------------------------------------
 *******           TABLEAU WEB SERVICES (OPENWEATHER API)           *******
 
-Request current weather data from the OpenWeather API via Table Extensions.
+Request weather data from the OpenWeather API via Table Extensions.
 
 Table Extension scripts are essentially functions with a return statement. 
 However, in order to support local development the script is run from main.py 
@@ -26,8 +26,8 @@ import requests
 import pandas as pd
 
 # obtains data from the OpenWeather API
-def get_data(cities, api_key, threading):
-  # a dict of current weather data per city
+def get_data(cities, api_key, threading, data_type):
+  # a dict of weather data per city
   weather_data = {}
   # session object for HTTP persistent connections (https://requests.readthedocs.io/en/latest/user/advanced/#session-objects)
   session = requests.Session()
@@ -36,13 +36,13 @@ def get_data(cities, api_key, threading):
     lon = city["lon"]
     lat = city["lat"]
     query_parameters = f'lat={lat}&lon={lon}&appid={api_key}&units=imperial'
-    url = f'https://api.openweathermap.org/data/2.5/weather?{query_parameters}'
+    url = f'https://api.openweathermap.org/data/2.5/{data_type}?{query_parameters}'
     
     nonlocal session
     req = session.get(url)
     # response is serialized into json
     payload = req.json()
-    # payload contains current weather for each city
+    # payload contains weather data for each city
     return payload
 
   if threading == True:
@@ -151,6 +151,8 @@ def create_df(multiprocess, data_type, data):
     # each row will have a unique index
     index = 0
     for forecast in data:
+      print('data: ', data)
+      print('forecast: ', forecast)
       forecast_list = data[forecast]["list"]
       for forecast_3hr in forecast_list:
         index = index + 1
@@ -218,7 +220,7 @@ def create_df(multiprocess, data_type, data):
         # appends each row to a single dataframe (forecast_df)
         append_rows(forecast_row)
 
-  if data_type == 'current':
+  if data_type == 'weather':
     if multiprocess == False:
       current_weather(data)
     elif multiprocess == True:
@@ -228,7 +230,7 @@ def create_df(multiprocess, data_type, data):
     # dict comprehension creates rows for each city
     {weather_forecast(data[forecast]) for forecast in data}
   else:
-    raise Exception('ERROR: data_type must be current or forecast')
+    raise Exception('ERROR: data_type must be weather or forecast')
 
   return weather_df
 
