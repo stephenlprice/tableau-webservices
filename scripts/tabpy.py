@@ -42,7 +42,7 @@ def get_data(cities, api_key):
     # returns the dict with city name as key and json payload as value   
     return weather_data
 
-def create_row(data_type, data):
+def create_df(data_type, data):
   weather_df = pd.DataFrame()
   # append data to a dataframe as the process() iterates through each city
   def append_rows(data_row):
@@ -229,10 +229,10 @@ def process(multiprocess, data_type, data):
 
   if multiprocess == False:
     # dict comprehension creates rows for each city
-    processed_df = pd.concat([processed_df, {create_row(data[city], data_type) for city in data}], ignore_index=True)
+    processed_df = pd.concat([processed_df, {create_df(data[city], data_type) for city in data}], ignore_index=True)
   elif multiprocess == True:
     # runs a process pool for the specified function
-    process_pooler(create_row, data_type=data_type, task=data)
+    process_pooler(create_df, data_type=data_type, task=data)
   else:
     raise Exception('ERROR: multiprocess must be True or False')
 
