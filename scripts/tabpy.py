@@ -42,7 +42,7 @@ def get_data(cities, api_key):
     # returns the dict with city name as key and json payload as value   
     return weather_data
 
-def create_df(data_type, data):
+def create_df(multiprocess, data_type, data):
   weather_df = pd.DataFrame()
   # append data to a dataframe as the process() iterates through each city
   def append_rows(data_row):
@@ -191,8 +191,11 @@ def create_df(data_type, data):
         append_rows(forecast_row)
 
   if data_type == 'current':
-    # dict comprehension creates rows for each city
-    {current_weather(data[city]) for city in data}
+    if multiprocess == False:
+      current_weather(data)
+    elif multiprocess == True:
+      # dict comprehension creates rows for each city
+      {current_weather(data[city]) for city in data}
   elif data_type == 'forecast':
     # dict comprehension creates rows for each city
     {weather_forecast(data[forecast]) for forecast in data}
@@ -204,6 +207,7 @@ def create_df(data_type, data):
 
 # creates dataframes from each city and appends them to a single dataframe
 def process(multiprocess, data_type, data):
+  # print("process data: ", data)
   processed_df = pd.DataFrame()
   # spawns processes to process data in parallel
   def process_pooler(func, *args, **kwargs):
@@ -213,8 +217,10 @@ def process(multiprocess, data_type, data):
       del kwargs["task"]
       data_type = kwargs["data_type"]
       del kwargs["data_type"]
+      multiprocess = kwargs["multiprocess"]
+      del kwargs["multiprocess"]
       # list comprehension loops through every city to create chunks for each process
-      results = {executor.submit(func, data_type, {chunk: task[chunk]}, *args, **kwargs) for chunk in task}
+      results = {executor.submit(func, multiprocess, data_type, {chunk: task[chunk]}, *args, **kwargs) for chunk in task}
       try:
         # results contains a list of futures that needs to be iterated through
         for future in concurrent.futures.as_completed(results):
@@ -228,11 +234,12 @@ def process(multiprocess, data_type, data):
         return processed_df
 
   if multiprocess == False:
+    weather_df = {create_df(multiprocess, data_type, data[city]) for city in data}
     # dict comprehension creates rows for each city
-    processed_df = pd.concat([processed_df, {create_df(data[city], data_type) for city in data}], ignore_index=True)
+    processed_df = pd.concat([processed_df, weather_df], ignore_index=True)
   elif multiprocess == True:
     # runs a process pool for the specified function
-    process_pooler(create_df, data_type=data_type, task=data)
+    process_pooler(create_df, multiprocess=multiprocess, data_type=data_type, task=data)
   else:
     raise Exception('ERROR: multiprocess must be True or False')
 
