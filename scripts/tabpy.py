@@ -1,11 +1,31 @@
-# gets weather data for the specified geolocations
+"""
+-------------------------------------------------------------------------------------
+*******           TABLEAU WEB SERVICES (OPENWEATHER API)           *******
+
+Request current weather data from the OpenWeather API via Table Extensions.
+
+Table Extension scripts are essentially functions with a return statement. 
+However, in order to support local development the script is run from main.py 
+so that performance recording and load testing can be done separate from 
+Tabpy code. Therefore when running main.py, the script can output results to 
+a shell without resulting in: (SyntaxError: 'return' outside function).
+
+This entire file can be added to a Table Extensions script without modification
+since lines of code intended for local development will not be run when the script
+is imported into Tabpy as a function.
+
+To secure the necessary API key, use a .env file (see README.md) during local
+development. This avoids pushing your key to public repositories such as Github.
+When deployed to a Table Extension you can hardcode the API key in the script.
+-------------------------------------------------------------------------------------
+"""
 # imports used by the Tabpy Function
 import traceback
 import concurrent.futures
 import requests
 import pandas as pd
 
-# obtains data from OpenWeather API
+# obtains data from the OpenWeather API
 def get_data(cities, api_key, threading):
   # a dict of current weather data per city
   weather_data = {}
@@ -49,7 +69,7 @@ def get_data(cities, api_key, threading):
       weather_data[city["city"]] = payload
     return weather_data
   
-# creates dataframes from each city and appends them to a single dataframe
+# creates dataframes from each dictionary value and appends them to a single dataframe
 def create_df(multiprocess, data_type, data):
   weather_df = pd.DataFrame()
   # append data to a dataframe as the process() iterates through each city
