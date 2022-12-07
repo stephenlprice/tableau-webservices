@@ -42,10 +42,8 @@ def get_data(cities, api_key):
     # returns the dict with city name as key and json payload as value   
     return weather_data
 
-# creates dataframes from each city and appends them to a single dataframe
-def process(type, data):
+def create_row(data_type, data):
   weather_df = pd.DataFrame()
-  
   # append data to a dataframe as the process() iterates through each city
   def append_rows(data_row):
     nonlocal weather_df
@@ -53,22 +51,22 @@ def process(type, data):
     weather_df = pd.concat([weather_df, data_row], ignore_index=True)
 
   # creates a row from current weather data
-  def current_weather(city):
+  def current_weather(data):
     # each row will have a unique index
-    index = city["id"]
+    index = data["id"]
     # coordinates
-    coord = city["coord"]
+    coord = data["coord"]
     coord["ID"] = index
     coord = pd.DataFrame.from_dict([coord])
 
     # weather results
-    weather = city["weather"][0]
+    weather = data["weather"][0]
     del weather["id"]
     weather["ID"] = index
     weather = pd.DataFrame.from_dict([weather])
 
     # main weather data
-    main = city["main"]
+    main = data["main"]
     if "sea_level" in main:
       del main["sea_level"]
     if "grnd_level" in main:
@@ -78,33 +76,33 @@ def process(type, data):
 
     # visibility 
     visibility = {}
-    visibility["visibility"] = city["visibility"]
+    visibility["visibility"] = data["visibility"]
     visibility["ID"] = index
     visibility = pd.DataFrame.from_dict([visibility])
 
     # wind
     wind = {}
-    wind["wind speed"] = city["wind"]["speed"]
-    wind["wind deg"] = city["wind"]["deg"]
+    wind["wind speed"] = data["wind"]["speed"]
+    wind["wind deg"] = data["wind"]["deg"]
     wind["ID"] = index
     wind = pd.DataFrame.from_dict([wind])
 
     # clouds
     clouds = {}
-    clouds["clouds"] = city["clouds"]["all"]
+    clouds["clouds"] = data["clouds"]["all"]
     clouds["ID"] = index
     clouds = pd.DataFrame.from_dict([clouds])
 
     # country
     country = {}
-    country["country"] = city["sys"]["country"]
+    country["country"] = data["sys"]["country"]
     country["ID"] = index
     country = pd.DataFrame.from_dict([country])
 
     # name (city)
     name = {}
-    name["name"] = city["name"]
-    name["city_id"]= city["id"]
+    name["name"] = data["name"]
+    name["city_id"]= data["id"]
     name["ID"] = index
     name = pd.DataFrame.from_dict([name])
 
@@ -121,20 +119,20 @@ def process(type, data):
     append_rows(city_row)
   
   # creates a row from 3 hour 5 day weather forecasts
-  def weather_forecast(forecasts):
+  def weather_forecast(data):
     # each row will have a unique index
     index = 0
-    for forecast in forecasts:
-      forecast_list = forecasts[forecast]["list"]
+    for forecast in data:
+      forecast_list = data[forecast]["list"]
       for forecast_3hr in forecast_list:
         index = index + 1
         # location
         location = {}
-        location["city_id"]= forecasts[forecast]["city"]["id"]
-        location["name"]= forecasts[forecast]["city"]["name"]
-        location["country"]= forecasts[forecast]["city"]["country"]
-        location["lat"]= forecasts[forecast]["city"]["coord"]["lat"]
-        location["lon"]= forecasts[forecast]["city"]["coord"]["lon"]
+        location["city_id"]= data[forecast]["city"]["id"]
+        location["name"]= data[forecast]["city"]["name"]
+        location["country"]= data[forecast]["city"]["country"]
+        location["lat"]= data[forecast]["city"]["coord"]["lat"]
+        location["lon"]= data[forecast]["city"]["coord"]["lon"]
         location["ID"] = index
         location = pd.DataFrame.from_dict([location])
 
@@ -192,19 +190,53 @@ def process(type, data):
         # appends each row to a single dataframe (forecast_df)
         append_rows(forecast_row)
 
-  # determine right operation based on data type
-  def create_row(data, type):
-    if type == 'current':
-      # dict comprehension creates rows for each city
-      {current_weather(data[city]) for city in data}
-    elif type == 'forecast':
-      weather_forecast(data)
-    else:
-      raise Exception('data type must be current or forecast')
-    
-  create_row(data, type)
+  if data_type == 'current':
+    # dict comprehension creates rows for each city
+    {current_weather(data[city]) for city in data}
+  elif data_type == 'forecast':
+    # dict comprehension creates rows for each city
+    {weather_forecast(data[forecast]) for forecast in data}
+  else:
+    raise Exception('ERROR: data_type must be current or forecast')
 
   return weather_df
+
+
+# creates dataframes from each city and appends them to a single dataframe
+def process(multiprocess, data_type, data):
+  processed_df = pd.DataFrame()
+  # spawns processes to process data in parallel
+  def process_pooler(func, *args, **kwargs):
+    nonlocal processed_df
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+      task = kwargs["task"]
+      del kwargs["task"]
+      data_type = kwargs["data_type"]
+      del kwargs["data_type"]
+      # list comprehension loops through every city to create chunks for each process
+      results = {executor.submit(func, data_type, {chunk: task[chunk]}, *args, **kwargs) for chunk in task}
+      try:
+        # results contains a list of futures that needs to be iterated through
+        for future in concurrent.futures.as_completed(results):
+          processed_data = future.result()
+          # append to final_df as we iterate through dataframes generated by each process
+          processed_df = pd.concat([processed_df, processed_data], ignore_index=True)
+      except:
+        print(f'ERROR: Process failed at:')
+        traceback.print_exc()
+      else:
+        return processed_df
+
+  if multiprocess == False:
+    # dict comprehension creates rows for each city
+    processed_df = pd.concat([processed_df, {create_row(data[city], data_type) for city in data}], ignore_index=True)
+  elif multiprocess == True:
+    # runs a process pool for the specified function
+    process_pooler(create_row, data_type=data_type, task=data)
+  else:
+    raise Exception('ERROR: multiprocess must be True or False')
+
+  return processed_df
 
 # output a dict of lists as required by Tableau
 def make_table(processed_data):
