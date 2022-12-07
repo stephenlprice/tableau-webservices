@@ -5,7 +5,8 @@ import concurrent.futures
 import requests
 import pandas as pd
 
-def get_data(cities, api_key):
+# obtains data from OpenWeather API
+def get_data(cities, api_key, threading):
   # a dict of current weather data per city
   weather_data = {}
   # session object for HTTP persistent connections (https://requests.readthedocs.io/en/latest/user/advanced/#session-objects)
@@ -23,25 +24,32 @@ def get_data(cities, api_key):
     payload = req.json()
     # payload contains current weather for each city
     return payload
-  
-  # use a pool of threads to execute async calls (https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor)
-  with concurrent.futures.ThreadPoolExecutor() as executor:
-    # list comprehension loops through every city to request API data with thread pools
-    results = [executor.submit(request_data, city, api_key) for city in cities]
-  try:
-    # catching the returned future (non-blocking threads)
-    for future in concurrent.futures.as_completed(results):
-      result = future.result()
-      # add the json response as a value for each city name key
-      name = result["name"]
-      weather_data[name] = result
-  except:
-    print(f'ERROR: Thread failed at:')
-    traceback.print_exc()
-  else:
-    # returns the dict with city name as key and json payload as value   
-    return weather_data
 
+  if threading == True:
+    # use a pool of threads to execute async calls (https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor)
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+      # list comprehension loops through every city to request API data with thread pools
+      results = [executor.submit(request_data, city, api_key) for city in cities]
+    try:
+      # catching the returned future (non-blocking threads)
+      for future in concurrent.futures.as_completed(results):
+        result = future.result()
+        # add the json response as a value for each city name key
+        name = result["name"]
+        weather_data[name] = result
+    except:
+      print(f'ERROR: Thread failed at:')
+      traceback.print_exc()
+    else:
+      # returns the dict with city name as key and json payload as value   
+      return weather_data
+  elif threading == False:
+    for city in cities:
+      payload = request_data(city, api_key)
+      weather_data[city["city"]] = payload
+    return weather_data
+  
+# creates dataframes from each city and appends them to a single dataframe
 def create_df(multiprocess, data_type, data):
   weather_df = pd.DataFrame()
   # append data to a dataframe as the process() iterates through each city
@@ -204,8 +212,7 @@ def create_df(multiprocess, data_type, data):
 
   return weather_df
 
-
-# creates dataframes from each city and appends them to a single dataframe
+# handles single and multiprocess operations
 def process(multiprocess, data_type, data):
   # print("process data: ", data)
   processed_df = pd.DataFrame()
