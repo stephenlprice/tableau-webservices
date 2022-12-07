@@ -27,11 +27,13 @@ import pandas as pd
 import tabpy
 
 class OpenWeather_Job:
-  def __init__(self, multithreading, multiprocessing, input_data, api_key):
+  def __init__(self, multithreading, multiprocessing, data_type, input_data, api_key):
     # True or False
     self.multithreading = multithreading
     # True or False
     self.multiprocessing = multiprocessing
+    # specifies wether forecast or current weather job
+    self.data_type = data_type
     # .csv file
     self.input_data = input_data
     # key for OpenWeather API
@@ -84,12 +86,13 @@ class OpenWeather_Job:
     cities_dict = self.__run_perf(pd.read_csv, self.input_data, header=[0], operation='File read')
     cities = cities_dict.to_dict('records')
     # request data from OpenWeather API
-    weather_dict = self.__run_perf(tabpy.get_data, cities, api_key, self.multithreading, operation='REST API calls')
+    weather_dict = self.__run_perf(tabpy.get_data, cities, api_key, self.multithreading, self.data_type, operation='REST API calls')
     # starts a process pooler to run processing in parallel
-    processed_df = self.__run_perf(tabpy.process, self.multiprocessing, "current", weather_dict, operation='Process pool')
+    processed_df = self.__run_perf(tabpy.process, self.multiprocessing, self.data_type, weather_dict, operation='Process pool')
     # print the resulting dataset as a dataframe for readability
     print(f'\n      //////////////    Multi-threading: {self.multithreading} | Multi-processing: {self.multiprocessing}    ///////////////\n')
-    print(processed_df, '\n')
+    print(processed_df)
+    print(f'\n      ______________________________________________________________________________________________________________________\n')
     # calculate script and individual operation performance
     script_finish = time.perf_counter()
     self.script_perf = script_finish - script_start
@@ -103,11 +106,12 @@ if __name__ == '__main__':
   env_dict = dict(os.environ)
   api_key = env_dict["API_KEY"]
   input_data = 'data/cities_5.csv'
+  data_type = 'weather'
   
   # Object constructor: OpenWeather_Job(multithreading, multiprocessing, input_data, api_key)
-  singleThread_singleProcess = OpenWeather_Job(False, False, input_data, api_key)
-  multiThread_singleProcess = OpenWeather_Job(True, False, input_data, api_key)
-  multiThread_multiProcess = OpenWeather_Job(True, True, input_data, api_key)
+  singleThread_singleProcess = OpenWeather_Job(False, False, data_type,  input_data, api_key)
+  multiThread_singleProcess = OpenWeather_Job(True, False, data_type, input_data, api_key)
+  multiThread_multiProcess = OpenWeather_Job(True, True, data_type, input_data, api_key)
   
   print("""
     -------------------------------------------------------------------------------------
