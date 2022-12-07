@@ -77,7 +77,7 @@ if __name__ == '__main__':
   # request data from OpenWeather API
   weather_dict = run_perf(tabpy.get_data, cities, api_key, operation='REST API calls')
   # starts a process pooler to run processing in parallel
-  processed_df = run_perf(process_pooler, weather_dict, 'current', operation='Process pool')
+  processed_df = run_perf(tabpy.process, True, "current", weather_dict, operation='Process pool')
   # print the resulting dataset as a dataframe for readability
   print("""
     -------------------------------------------------------------------------------------
