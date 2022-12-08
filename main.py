@@ -74,10 +74,11 @@ class OpenWeather_Job:
     for ratio in ratios:
       message += f' {ratios[ratio]} |'
     message = message[:-1] + ']\n'
-    print(f'      //////////////    Multi-threading: {self.multithreading} | Multi-processing: {self.multiprocessing}    ///////////////\n')
+    print(f'Multi-threading: {self.multithreading} | Multi-processing: {self.multiprocessing}')
     print(f'Script finished in {script_perf} second(s)')
     # prints the percentage that operation contributed to total script runtime
     print(message)
+    print(f'      ______________________________________________________________________________________________________________________\n')
 
   def run_job(self):
     # measures performance of each operation and the entire script
@@ -90,9 +91,9 @@ class OpenWeather_Job:
     # starts a process pooler to run processing in parallel
     processed_df = self.__run_perf(tabpy.process, self.multiprocessing, self.data_type, weather_dict, operation='Process pool')
     # print the resulting dataset as a dataframe for readability
-    print(f'\n      //////////////    Multi-threading: {self.multithreading} | Multi-processing: {self.multiprocessing}    ///////////////\n')
+    print(f'\nMulti-threading: {self.multithreading} | Multi-processing: {self.multiprocessing}\n')
     print(processed_df)
-    print(f'\n      ______________________________________________________________________________________________________________________\n')
+    print(f'\n      _____________________________________________________________________________________________________________________\n')
     # calculate script and individual operation performance
     script_finish = time.perf_counter()
     self.script_perf = script_finish - script_start
@@ -114,16 +115,16 @@ if __name__ == '__main__':
   multiThread_multiProcess = OpenWeather_Job(True, True, data_type, input_data, api_key)
   
   print("""
-    -------------------------------------------------------------------------------------
-    **************                     CURRENT WEATHER                     **************
+    ------------------------------------------------------------------------------------------------------------------------
+    *******************************                      CURRENT WEATHER                     *******************************
   """)
   singleThread_singleProcess.run_job()
   multiThread_singleProcess.run_job()
   multiThread_multiProcess.run_job()
 
   print("""
-      -------------------------------------------------------------------------------------
-      **************                       PERFORMANCE                       **************
+      ----------------------------------------------------------------------------------------------------------------------
+      *******************************                       PERFORMANCE                      *******************************
     """)
   singleThread_singleProcess.print_perf()
   multiThread_singleProcess.print_perf()
