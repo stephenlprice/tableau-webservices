@@ -27,20 +27,29 @@ import pandas as pd
 import tabpy
 
 class OpenWeather_Job:
+  """
+    This class defines inputs and functions that can run "jobs" or requests for data from 
+    the OpenWeather API to obtain current weather and 5 day 3 hour forecasts for each city 
+    listed on an input table. "Jobs" simulate different function configurations to simulate 
+    running Tabpy scripts for use in Tableau Table Extensions. These simulations represent 
+    how single threaded, multithreaded and multiprocess configuration affect the Tabpy script's 
+    ability to deliver a dataset to Tableau under different workloads (number of cities). This 
+    class also defines a private function that records performance for analysis.
+  """
   def __init__(self, multithreading, multiprocessing, data_type, input_data, api_key):
     # True or False
     self.multithreading = multithreading
     # True or False
     self.multiprocessing = multiprocessing
-    # specifies wether forecast or current weather job
+    # whether the job is a forecast or current weather job
     self.data_type = data_type
     # .csv file
     self.input_data = input_data
     # key for OpenWeather API
     self.api_key = api_key
-    # stores performance recording to output at script end
+    # stores performance for all operations
     self.perf_dict = {}
-    # 
+    # stores performance for the entire script
     self.script_perf = 0
 
   def __str__(self):
@@ -80,6 +89,7 @@ class OpenWeather_Job:
     print(message)
     print(f'      ______________________________________________________________________________________________________________________\n')
 
+  # runs a job as configured by constructor parameters
   def run_job(self):
     # measures performance of each operation and the entire script
     script_start = time.perf_counter()
@@ -116,7 +126,7 @@ if __name__ == '__main__':
   
   print("""
     ------------------------------------------------------------------------------------------------------------------------
-    *******************************                      CURRENT WEATHER                     *******************************
+    ********************************                       WEATHER DATA                     ********************************
   """)
   singleThread_singleProcess.run_job()
   multiThread_singleProcess.run_job()
